@@ -1,0 +1,317 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { Upload, FileText, Users, Settings, ChevronRight, ChevronLeft, Check, X, Search, Loader2, Wand2, FolderOpen } from "lucide-react";
+
+const steps = [
+  { id: 1, label: "Documento", icon: FileText },
+  { id: 2, label: "Assinantes", icon: Users },
+  { id: 3, label: "Configurações", icon: Settings },
+];
+
+export default function NovoDocumentoClient() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const folderId = searchParams.get("folderId");
+  const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedPath, setUploadedPath] = useState("");
+  const [useTemplate, setUseTemplate] = useState(false);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [templateVars, setTemplateVars] = useState<Record<string, string>>({});
+  const [signerSearch, setSignerSearch] = useState("");
+  const [signerResults, setSignerResults] = useState<any[]>([]);
+  const [selectedSigners, setSelectedSigners] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [reminderDays, setReminderDays] = useState(3);
+
+  const handleFileChange = async (f: File) => {
+    setFile(f);
+    setUploading(true);
+    try {
+      const presignRes = await fetch("/api/upload/presigned", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName: f.name, contentType: f.type, isPublic: true }),
+      });
+      const { uploadUrl, cloud_storage_path } = await presignRes.json();
+      const urlObj = new URL(uploadUrl);
+      const signedHeaders = urlObj.searchParams.get("X-Amz-SignedHeaders") ?? "";
+      const uploadHeaders: Record<string, string> = { "Content-Type": f.type };
+      if (signedHeaders.includes("content-disposition")) uploadHeaders["Content-Disposition"] = "attachment";
+      await fetch(uploadUrl, { method: "PUT", headers: uploadHeaders, body: f });
+      setUploadedPath(cloud_storage_path);
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao fazer upload");
+      setFile(null);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const loadTemplates = async () => {
+    const res = await fetch("/api/templates");
+    const data = await res.json();
+    setTemplates(data.templates ?? []);
+  };
+
+  const searchSigners = useCallback(async (q: string) => {
+    if (!q.trim()) { setSignerResults([]); return; }
+    setSearchLoading(true);
+    try {
+      const res = await fetch(`/api/signers?search=${encodeURIComponent(q)}&limit=10`);
+      const data = await res.json();
+      setSignerResults((data.signers ?? []).filter((s: any) => !selectedSigners.find((sel) => sel.id === s.id)));
+    } finally { setSearchLoading(false); }
+  }, [selectedSigners]);
+
+  const addSigner = (s: any) => { setSelectedSigners([...selectedSigners, s]); setSignerResults([]); setSignerSearch(""); };
+  const removeSigner = (id: string) => setSelectedSigners(selectedSigners.filter((s) => s.id !== id));
+
+  const handleSubmit = async (andSend: boolean) => {
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title, description: description || null, fileUrl: uploadedPath || null,
+          fileName: file?.name || null, fileSize: file?.size || null,
+          message: message || null, deadline: deadline || null, reminderDays,
+          signerIds: selectedSigners.map((s) => s.id),
+          folderId: folderId || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error ?? "Erro ao criar documento"); return; }
+      if (andSend && selectedSigners.length > 0) {
+        await fetch(`/api/documents/${data.document.id}/send`, { method: "POST" });
+      }
+      // Se foi criado a partir de uma pasta, volta para a pasta
+      if (folderId) {
+        router.push(`/pastas`);
+      } else {
+        router.push(`/documentos/${data.document.id}`);
+      }
+    } finally { setSubmitting(false); }
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Novo Documento</h1>
+        <p className="text-gray-500 text-sm">Crie e envie um documento para assinatura</p>
+        {folderId && (
+          <div className="mt-2 flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg w-fit text-sm">
+            <FolderOpen className="w-4 h-4" />
+            <span>Salvando na pasta selecionada</span>
+          </div>
+        )}
+      </div>
+      {/* Stepper */}
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+        <div className="flex items-center">
+          {steps.map((s, i) => (
+            <div key={s.id} className="flex items-center flex-1">
+              <div className="flex items-center gap-2">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm transition-all ${
+                  step > s.id ? "bg-emerald-500 text-white" : step === s.id ? "bg-[#1E3A5F] text-white" : "bg-gray-100 text-gray-400"
+                }`}>
+                  {step > s.id ? <Check className="w-4 h-4" /> : s.id}
+                </div>
+                <span className={`text-sm font-medium hidden sm:block ${
+                  step === s.id ? "text-[#1E3A5F]" : step > s.id ? "text-emerald-600" : "text-gray-400"
+                }`}>{s.label}</span>
+              </div>
+              {i < steps.length - 1 && <div className={`flex-1 h-0.5 mx-3 rounded ${step > s.id ? "bg-emerald-400" : "bg-gray-200"}`} />}
+            </div>
+          ))}
+        </div>
+      </div>
+      <AnimatePresence mode="wait">
+        {step === 1 && (
+          <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-800">Informações do Documento</h2>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+              <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nome do documento"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder="Descrição opcional"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] text-sm resize-none" />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setUseTemplate(false)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${!useTemplate ? "bg-[#1E3A5F] text-white border-[#1E3A5F]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>
+                <Upload className="w-4 h-4 inline mr-1" /> Upload PDF
+              </button>
+              <button onClick={async () => { setUseTemplate(true); await loadTemplates(); }}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${useTemplate ? "bg-[#1E3A5F] text-white border-[#1E3A5F]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>
+                <Wand2 className="w-4 h-4 inline mr-1" /> Usar Template
+              </button>
+            </div>
+            {!useTemplate && (
+              <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-[#1E3A5F] transition-colors cursor-pointer"
+                onClick={() => document.getElementById("file-input")?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFileChange(f); }}>
+                <input id="file-input" type="file" accept=".pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileChange(f); }} />
+                {uploading ? (
+                  <><div className="w-8 h-8 border-2 border-[#1E3A5F] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">Enviando arquivo...</p></>
+                ) : file ? (
+                  <><FileText className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-700">{file.name}</p>
+                  <p className="text-xs text-gray-400">{(file.size / 1024 / 1024).toFixed(2)} MB ✓ Upload concluído</p></>
+                ) : (
+                  <><Upload className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">Arraste um PDF ou clique para selecionar</p></>
+                )}
+              </div>
+            )}
+            {useTemplate && (
+              <div className="space-y-3">
+                <select value={selectedTemplate?.id ?? ""}
+                  onChange={(e) => { const t = templates.find((t) => t.id === e.target.value); setSelectedTemplate(t ?? null); setTemplateVars({}); }}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] text-sm">
+                  <option value="">Selecione um template</option>
+                  {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+                {(selectedTemplate?.variables?.length ?? 0) > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-700">Variáveis:</p>
+                    {selectedTemplate.variables.map((v: string) => (
+                      <div key={v}>
+                        <label className="block text-xs text-gray-500 mb-1">{`{${v}}`}</label>
+                        <input type="text" value={templateVars[v] ?? ""} onChange={(e) => setTemplateVars({ ...templateVars, [v]: e.target.value })}
+                          placeholder={`Valor para {${v}}`}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </motion.div>
+        )}
+        {step === 2 && (
+          <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-800">Selecionar Assinantes</h2>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input type="text" value={signerSearch}
+                onChange={(e) => { setSignerSearch(e.target.value); searchSigners(e.target.value); }}
+                placeholder="Buscar assinantes..."
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] text-sm" />
+              {searchLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />}
+            </div>
+            {signerResults.length > 0 && (
+              <div className="border border-gray-200 rounded-xl overflow-hidden">
+                {signerResults.map((s) => (
+                  <button key={s.id} onClick={() => addSigner(s)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-left border-b last:border-b-0 border-gray-100">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-[#1E3A5F] font-semibold text-sm">
+                      {s.name?.charAt(0)?.toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{s.name}</p>
+                      <p className="text-xs text-gray-400">{s.email}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            {selectedSigners.length > 0 ? (
+              <div className="space-y-2">
+                {selectedSigners.map((s, i) => (
+                  <div key={s.id} className="flex items-center gap-3 bg-blue-50 rounded-xl px-4 py-3">
+                    <div className="w-7 h-7 bg-[#1E3A5F] rounded-full flex items-center justify-center text-white font-bold text-xs">{i + 1}</div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{s.name}</p>
+                      <p className="text-xs text-gray-500">{s.email}</p>
+                    </div>
+                    <button onClick={() => removeSigner(s.id)} className="text-gray-400 hover:text-red-500"><X className="w-4 h-4" /></button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">Nenhum assinante selecionado</p>
+              </div>
+            )}
+          </motion.div>
+        )}
+        {step === 3 && (
+          <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+            className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-800">Configurações</h2>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Mensagem para assinantes</label>
+              <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3}
+                placeholder="Mensagem personalizada..."
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] text-sm resize-none" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Prazo para assinatura</label>
+              <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Lembrete após (dias sem assinar)</label>
+              <input type="number" value={reminderDays} onChange={(e) => setReminderDays(Number(e.target.value))} min={1} max={30}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] text-sm" />
+            </div>
+            <div className="bg-gray-50 rounded-xl p-4 space-y-1.5 text-sm">
+              <p className="font-semibold text-gray-700 mb-2">Resumo:</p>
+              <p className="text-gray-600">Documento: <span className="font-medium">{title}</span></p>
+              <p className="text-gray-600">Assinantes: <span className="font-medium">{selectedSigners.length}</span></p>
+              {deadline && <p className="text-gray-600">Prazo: <span className="font-medium">{new Date(deadline + "T00:00:00").toLocaleDateString("pt-BR")}</span></p>}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div className="flex items-center justify-between">
+        <button onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1}
+          className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition-colors text-sm font-medium">
+          <ChevronLeft className="w-4 h-4" /> Voltar
+        </button>
+        <div className="flex gap-2">
+          {step < 3 ? (
+            <button
+              onClick={() => { if (step === 1 && !title.trim()) { alert("Informe o título"); return; } setStep(step + 1); }}
+              className="flex items-center gap-2 bg-[#1E3A5F] hover:bg-[#152d4a] text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-lg">
+              Próximo <ChevronRight className="w-4 h-4" />
+            </button>
+          ) : (
+            <>
+              <button onClick={() => handleSubmit(false)} disabled={submitting}
+                className="px-5 py-2.5 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 font-medium text-sm transition-colors">
+                Salvar Rascunho
+              </button>
+              <button onClick={() => handleSubmit(true)} disabled={submitting || selectedSigners.length === 0}
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-lg disabled:opacity-50">
+                {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                Enviar para Assinatura
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

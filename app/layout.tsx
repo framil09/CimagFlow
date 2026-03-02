@@ -1,0 +1,40 @@
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { Providers } from "@/components/providers";
+import { Toaster } from "@/components/ui/toaster";
+
+const inter = Inter({ subsets: ["latin"] });
+
+export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "CimagFlow - Assinatura Digital de Documentos",
+  description: "Sistema profissional de gestão e assinatura digital de documentos",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+  },
+  openGraph: {
+    title: "CimagFlow - Assinatura Digital",
+    description: "Sistema profissional de gestão e assinatura digital de documentos",
+    images: ["/og-image.png"],
+  },
+  metadataBase: new URL(process.env.NEXTAUTH_URL ?? "http://localhost:3000"),
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        <script src="https://apps.abacus.ai/chatllm/appllm-lib.js" />
+      </head>
+      <body className={inter.className}>
+        <Providers>
+          {children}
+          <Toaster />
+        </Providers>
+      </body>
+    </html>
+  );
+}
