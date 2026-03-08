@@ -133,7 +133,7 @@ export default function AbrirDemandaPublicaPage() {
             </div>
             
             <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              Demanda Registrada com Sucesso!
+              Solicitação Registrada com Sucesso!
             </h1>
             
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-xl p-6 mb-6 shadow-md">
@@ -155,7 +155,7 @@ export default function AbrirDemandaPublicaPage() {
                 </p>
                 <p className="flex items-start gap-2">
                   <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span>Guarde este número para acompanhar sua demanda</span>
+                  <span>Guarde este número para acompanhar sua solicitação</span>
                 </p>
                 <p className="flex items-start gap-2">
                   <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -163,7 +163,7 @@ export default function AbrirDemandaPublicaPage() {
                 </p>
                 <p className="flex items-start gap-2">
                   <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <span>Use o botão abaixo para consultar sua demanda a qualquer momento</span>
+                  <span>Use o botão abaixo para consultar sua solicitação a qualquer momento</span>
                 </p>
               </div>
             </div>
@@ -175,7 +175,7 @@ export default function AbrirDemandaPublicaPage() {
                 size="lg"
               >
                 <FileText className="h-4 w-4" />
-                Consultar Demanda
+                Consultar Solicitação
               </Button>
               
               <Button
@@ -183,7 +183,7 @@ export default function AbrirDemandaPublicaPage() {
                 variant="outline"
                 size="lg"
               >
-                Abrir Nova Demanda
+                Nova Solicitação
               </Button>
             </div>
 
@@ -213,7 +213,7 @@ export default function AbrirDemandaPublicaPage() {
             />
           </div>
           <h1 className="text-4xl font-bold text-white mb-3">
-            Abrir Nova Demanda
+            Nova Solicitação
           </h1>
           <p className="text-blue-200 text-lg max-w-2xl mx-auto">
             Preencha o formulário abaixo para registrar sua solicitação. 
@@ -229,7 +229,7 @@ export default function AbrirDemandaPublicaPage() {
                 <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                   <FileSignature className="h-5 w-5 text-blue-600" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">Dados da Demanda</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Dados da Solicitação</h2>
               </div>
 
               <div className="grid gap-6">
@@ -258,7 +258,7 @@ export default function AbrirDemandaPublicaPage() {
                 <div className="grid gap-3">
                   <Label htmlFor="title" className="flex items-center gap-2 text-base">
                     <FileText className="h-4 w-4 text-gray-500" />
-                    Título da Demanda <span className="text-red-500">*</span>
+                    Título da Solicitação <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="title"
@@ -420,7 +420,7 @@ export default function AbrirDemandaPublicaPage() {
                 ) : (
                   <>
                     <Send className="h-5 w-5" />
-                    Enviar Demanda
+                    Enviar Solicitação
                   </>
                 )}
               </Button>
@@ -445,7 +445,7 @@ export default function AbrirDemandaPublicaPage() {
                 className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 text-sm font-semibold hover:underline"
               >
                 <FileText className="h-4 w-4" />
-                Consultar Status da Demanda →
+                Consultar Status da Solicitação →
               </Link>
             </div>
           </form>
