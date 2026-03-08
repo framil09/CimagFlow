@@ -13,7 +13,7 @@ export default withAuth(
           pathname.startsWith("/login") ||
           pathname.startsWith("/registro") ||
           pathname.startsWith("/assinar") ||
-          pathname.startsWith("/abrir-demanda") ||
+          pathname.startsWith("/nova-solicitacao") ||
           pathname.startsWith("/consulta-protocolo") ||
           pathname.startsWith("/api/auth") ||
           pathname.startsWith("/api/signup") ||

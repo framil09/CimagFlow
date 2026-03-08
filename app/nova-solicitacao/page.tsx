@@ -75,6 +75,11 @@ export default function AbrirDemandaPublicaPage() {
         return;
       }
 
+      if (!formData.dotacao) {
+        toast.error("Dotação orçamentária é obrigatória");
+        return;
+      }
+
       // Validar email
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.requesterEmail)) {
@@ -359,12 +364,15 @@ export default function AbrirDemandaPublicaPage() {
                 </div>
 
                 <div className="grid gap-3">
-                  <Label htmlFor="dotacao" className="text-base">Dotação Orçamentária</Label>
+                  <Label htmlFor="dotacao" className="text-base">
+                    Dotação Orçamentária <span className="text-red-500">*</span>
+                  </Label>
                   <Input
                     id="dotacao"
                     placeholder="Ex: 3.3.90.39.00"
                     value={formData.dotacao}
                     onChange={(e) => handleChange("dotacao", e.target.value)}
+                    required
                     className="h-11"
                   />
                 </div>

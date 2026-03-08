@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     } = data;
 
     // Validações
-    if (!title || !description || !requesterName || !requesterEmail || !prefectureId) {
+    if (!title || !description || !requesterName || !requesterEmail || !prefectureId || !dotacao) {
       return NextResponse.json(
         { error: "Campos obrigatórios faltando" },
         { status: 400 }

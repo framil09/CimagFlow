@@ -43,7 +43,7 @@ export default async function HomePage() {
           {/* Main CTA Cards */}
           <div className="grid md:grid-cols-2 gap-6 mb-12">
             {/* Abrir Demanda - Destaque */}
-            <Link href="/abrir-demanda" className="block">
+            <Link href="/nova-solicitacao" className="block">
               <Card className="p-8 hover:shadow-xl transition-all duration-300 border-2 border-blue-500 bg-gradient-to-br from-blue-500 to-indigo-600 text-white h-full">
                 <FileText className="h-16 w-16 mb-4 mx-auto" />
                 <h3 className="text-2xl font-bold mb-3">Abrir Nova Demanda</h3>
@@ -117,7 +117,7 @@ export default async function HomePage() {
           <p className="text-gray-600 mb-8">
             Sistema integrado para gestão de demandas de diversas prefeituras parceiras
           </p>
-          <Link href="/abrir-demanda">
+          <Link href="/nova-solicitacao">
             <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
               Ver Prefeituras Disponíveis
             </Button>
@@ -132,7 +132,7 @@ export default async function HomePage() {
             © 2026 Cimagflow. Sistema de Gestão de Demandas Públicas.
           </p>
           <div className="mt-4 flex justify-center gap-6">
-            <Link href="/abrir-demanda" className="text-gray-400 hover:text-white text-sm">
+            <Link href="/nova-solicitacao" className="text-gray-400 hover:text-white text-sm">
               Abrir Demanda
             </Link>
             <Link href="/consulta-protocolo" className="text-gray-400 hover:text-white text-sm">
