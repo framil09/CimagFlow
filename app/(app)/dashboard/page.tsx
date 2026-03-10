@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import prisma from "@/lib/db";
 import DashboardClient from "./_components/dashboard-client";
+import DemandAnalytics from "./_components/demand-analytics";
 
 export const dynamic = "force-dynamic";
 
@@ -49,5 +50,10 @@ export default async function DashboardPage() {
     signedCount: d.signers?.filter((s: any) => s.status === "ASSINADO")?.length ?? 0,
   }));
 
-  return <DashboardClient stats={stats} recentDocs={recent} userName={session?.user?.name ?? ""} />;
+  return (
+    <div className="space-y-8">
+      <DashboardClient stats={stats} recentDocs={recent} userName={session?.user?.name ?? ""} />
+      <DemandAnalytics />
+    </div>
+  );
 }

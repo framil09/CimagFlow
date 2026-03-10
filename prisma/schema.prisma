@@ -95,6 +95,9 @@ model User {
   auditLogs   AuditLog[]
   demandsCreated     Demand[] @relation("DemandCreator")
   demandsAssigned    Demand[] @relation("DemandAssigned")
+  minutesCreated     MinutesOfMeeting[] @relation("MinuteCreator")
+  minutesApproved    MinutesOfMeeting[] @relation("MinuteApprover")
+  adhesionReviews    MinuteAdhesion[]
 
   @@map("users")
 }
@@ -236,6 +239,7 @@ model Prefecture {
   demands     Demand[]
   bids        Bid[]
   folders     Folder[]
+  minutes     MinutesOfMeeting[]
 
   @@map("prefectures")
 }
@@ -285,6 +289,7 @@ model Bid {
   creator      User        @relation(fields: [createdBy], references: [id])
   documents    Document[]
   companies    Company[]
+  minutes      MinutesOfMeeting[]
 
   @@map("bids")
 }
@@ -387,4 +392,110 @@ model DemandHistory {
   @@index([demandId])
   @@index([createdAt])
   @@map("demand_history")
+}
+
+enum MinuteStatus {
+  RASCUNHO
+  APROVADA
+  PUBLICADA
+  ARQUIVADA
+}
+
+enum MinuteType {
+  ORDINARIA
+  EXTRAORDINARIA
+  ESPECIAL
+  SOLENE
+}
+
+model MinutesOfMeeting {
+  id              String        @id @default(cuid())
+  number          String        @unique
+  title           String
+  description     String?       @db.Text
+  type            MinuteType    @default(ORDINARIA)
+  status          MinuteStatus  @default(RASCUNHO)
+  meetingDate     DateTime
+  startTime       String?
+  endTime         String?
+  location        String?
+  participants    String[]      @default([])
+  content         String?       @db.Text
+  decisions       String?       @db.Text
+  attachments     String[]      @default([])
+  
+  // Campos para Ata de Registro de Preço
+  isPriceRegistry Boolean       @default(false)
+  validityStartDate DateTime?
+  validityEndDate   DateTime?
+  isPublic        Boolean       @default(false)
+  allowAdhesion   Boolean       @default(false)
+  priceValue      Float?
+  items           String?       @db.Text
+  
+  prefectureId    String?
+  bidId           String?
+  createdBy       String
+  approvedBy      String?
+  approvedAt      DateTime?
+  publishedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  prefecture      Prefecture?   @relation(fields: [prefectureId], references: [id])
+  bid             Bid?          @relation(fields: [bidId], references: [id])
+  creator         User          @relation("MinuteCreator", fields: [createdBy], references: [id])
+  approver        User?         @relation("MinuteApprover", fields: [approvedBy], references: [id])
+  adhesions       MinuteAdhesion[]
+  
+  @@index([number])
+  @@index([status])
+  @@index([prefectureId])
+  @@index([meetingDate])
+  @@index([isPriceRegistry])
+  @@index([isPublic])
+  @@map("minutes_of_meeting")
+}
+
+enum AdhesionStatus {
+  PENDENTE
+  APROVADA
+  REJEITADA
+  CANCELADA
+}
+
+model MinuteAdhesion {
+  id                String         @id @default(cuid())
+  minuteId          String
+  
+  // Dados do solicitante
+  requesterName     String
+  requesterEmail    String
+  requesterPhone    String?
+  requesterCpf      String?
+  requesterCnpj     String?
+  companyName       String?
+  position          String?
+  
+  // Dados da adesão
+  status            AdhesionStatus @default(PENDENTE)
+  requestDate       DateTime       @default(now())
+  justification     String?        @db.Text
+  attachments       String[]       @default([])
+  
+  // Aprovação/Rejeição
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  reviewComment     String?        @db.Text
+  
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  minute            MinutesOfMeeting @relation(fields: [minuteId], references: [id], onDelete: Cascade)
+  reviewer          User?            @relation(fields: [reviewedBy], references: [id])
+  
+  @@index([minuteId])
+  @@index([status])
+  @@index([requesterEmail])
+  @@map("minute_adhesions")
 }

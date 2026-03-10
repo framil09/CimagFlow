@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Sidebar from "./sidebar";
-import { Bell, Search, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 interface AppShellProps {
@@ -54,10 +54,8 @@ export default function AppShell({ children }: AppShellProps) {
           >
             <Menu className="w-6 h-6" />
           </button>
+          
           <div className="flex-1" />
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            {mounted && <span className="hidden sm:block font-medium">{userName}</span>}
-          </div>
         </header>
 
         {/* Page content */}
