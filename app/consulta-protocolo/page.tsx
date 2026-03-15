@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, FileText, Clock, CheckCircle2, AlertCircle, Paperclip, Download } from "lucide-react";
+import { Search, FileText, Clock, CheckCircle2, AlertCircle, Paperclip, Download, AlertTriangle, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -258,6 +258,44 @@ export default function ConsultaProtocoloPage() {
               </Card>
             )}
 
+            {/* Pendências (se houver) */}
+            {demand.history && demand.history.filter((h: any) => h.action === "PENDENCIA_ENVIADA").length > 0 && (
+              <Card className="p-6 border-amber-300 bg-amber-50/80">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-amber-800">
+                  <AlertTriangle className="h-5 w-5" />
+                  Pendência(s) — Ação Necessária
+                </h3>
+                <div className="space-y-3">
+                  {demand.history
+                    .filter((h: any) => h.action === "PENDENCIA_ENVIADA")
+                    .map((item: any, index: number) => (
+                      <div
+                        key={index}
+                        className="p-4 bg-white border border-amber-200 rounded-lg"
+                      >
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Enviada em {formatDateTime(item.createdAt)}
+                        </p>
+                        <p className="text-sm whitespace-pre-wrap">{item.comment}</p>
+                      </div>
+                    ))}
+                </div>
+                <p className="text-xs text-amber-700 mt-3">
+                  Por favor, providencie o que foi solicitado para dar continuidade ao atendimento da sua demanda.
+                </p>
+                <Button
+                  onClick={() =>
+                    window.location.href = `/responder-demanda?protocolo=${encodeURIComponent(demand.protocolNumber)}`
+                  }
+                  className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  size="lg"
+                >
+                  <Send className="mr-2 h-4 w-4" />
+                  Responder Pendência
+                </Button>
+              </Card>
+            )}
+
             {/* Timeline */}
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Histórico</h3>
@@ -266,14 +304,16 @@ export default function ConsultaProtocoloPage() {
                   demand.history.map((item: any, index: number) => (
                     <div key={index} className="flex gap-4">
                       <div className="flex flex-col items-center">
-                        <div className="w-3 h-3 rounded-full bg-primary" />
+                        <div className={`w-3 h-3 rounded-full ${item.action === "PENDENCIA_ENVIADA" ? "bg-amber-500" : item.action === "RESPOSTA_SOLICITANTE" ? "bg-emerald-500" : "bg-primary"}`} />
                         {index < demand.history.length - 1 && (
                           <div className="w-0.5 h-full bg-border mt-2" />
                         )}
                       </div>
                       <div className="flex-1 pb-4">
                         <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline">{item.action}</Badge>
+                          <Badge variant="outline" className={item.action === "PENDENCIA_ENVIADA" ? "border-amber-500 text-amber-700" : item.action === "RESPOSTA_SOLICITANTE" ? "border-emerald-500 text-emerald-700" : ""}>
+                            {item.action === "PENDENCIA_ENVIADA" ? "Pendência Enviada" : item.action === "RESPOSTA_SOLICITANTE" ? "Sua Resposta" : item.action}
+                          </Badge>
                           <span className="text-sm text-muted-foreground">
                             {formatDateTime(item.createdAt)}
                           </span>

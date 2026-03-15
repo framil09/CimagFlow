@@ -19,7 +19,7 @@ export async function GET(
         history: {
           where: {
             action: {
-              in: ["CRIADA", "STATUS_ALTERADO", "CONCLUIDA"],
+              in: ["CRIADA", "STATUS_ALTERADO", "CONCLUIDA", "PENDENCIA_ENVIADA", "RESPOSTA_SOLICITANTE"],
             },
           },
           orderBy: { createdAt: "desc" },

@@ -15,6 +15,7 @@ export default withAuth(
           pathname.startsWith("/assinar") ||
           pathname.startsWith("/nova-solicitacao") ||
           pathname.startsWith("/consulta-protocolo") ||
+          pathname.startsWith("/responder-demanda") ||
           pathname.startsWith("/api/auth") ||
           pathname.startsWith("/api/signup") ||
           pathname.startsWith("/api/sign") ||

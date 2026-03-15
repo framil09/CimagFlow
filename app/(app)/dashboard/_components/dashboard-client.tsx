@@ -23,6 +23,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
+
+// Dynamic import recharts to avoid SSR/webpack chunk issues
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
