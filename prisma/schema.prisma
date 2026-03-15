@@ -174,17 +174,19 @@ model Signer {
 }
 
 model DocumentSigner {
-  id          String       @id @default(cuid())
-  documentId  String
-  signerId    String
-  status      SignerStatus @default(PENDENTE)
-  signedAt    DateTime?
-  token       String       @unique @default(cuid())
-  tokenUsedAt DateTime?
-  order       Int          @default(0)
-  ipAddress   String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id             String       @id @default(cuid())
+  documentId     String
+  signerId       String
+  status         SignerStatus @default(PENDENTE)
+  signedAt       DateTime?
+  token          String       @unique @default(cuid())
+  tokenUsedAt    DateTime?
+  order          Int          @default(0)
+  ipAddress      String?
+  cpfUsed        String?
+  signatureImage String?      @db.Text
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   document    Document     @relation(fields: [documentId], references: [id], onDelete: Cascade)
   signer      Signer       @relation(fields: [signerId], references: [id])

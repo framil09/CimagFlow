@@ -24,7 +24,7 @@ export async function GET(req: Request) {
         },
         include: {
           signers: {
-            include: { signer: { select: { id: true, name: true, email: true } } },
+            include: { signer: { select: { id: true, name: true, email: true, cpf: true } } },
             orderBy: { order: "asc" },
           },
           folder: { select: { id: true, name: true } },
@@ -48,6 +48,7 @@ export async function GET(req: Request) {
             id: ds.signer.id,
             name: ds.signer.name,
             email: ds.signer.email,
+            cpf: ds.signer.cpf,
           },
         })),
         stats: {
