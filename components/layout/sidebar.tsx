@@ -36,7 +36,7 @@ const navItems = [
   { href: "/demandas", icon: ClipboardList, label: "Demandas" },
   { href: "/pastas", icon: FolderOpen, label: "Pastas" },
   { href: "/para-assinar", icon: PenLine, label: "Para Assinar" },
-  { href: "/templates", icon: FileCode2, label: "Templates" },
+  { href: "/templates", icon: FileCode2, label: "Modelos" },
   { href: "/assinantes", icon: Users, label: "Assinantes" },
   { href: "/prefeituras", icon: Building2, label: "Prefeituras" },
   { href: "/empresas", icon: Building, label: "Empresas" },

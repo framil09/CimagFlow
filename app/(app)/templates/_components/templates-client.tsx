@@ -93,7 +93,7 @@ export default function TemplatesClient() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Excluir este template?")) return;
+    if (!confirm("Excluir este modelo?")) return;
     setDeleting(id);
     try { await fetch(`/api/templates/${id}`, { method: "DELETE" }); fetchTemplates(); }
     finally { setDeleting(null); }
@@ -131,19 +131,19 @@ export default function TemplatesClient() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Templates</h1>
-          <p className="text-gray-500 text-sm">{templates.length} template{templates.length !== 1 ? "s" : ""} disponível</p>
+          <h1 className="text-2xl font-bold text-gray-900">Modelos</h1>
+          <p className="text-gray-500 text-sm">{templates.length} modelo{templates.length !== 1 ? "s" : ""} disponível</p>
         </div>
         <button onClick={openCreate}
           className="flex items-center gap-2 bg-[#1E3A5F] hover:bg-[#152d4a] text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-lg">
-          <Plus className="w-4 h-4" /> Novo Template
+          <Plus className="w-4 h-4" /> Novo Modelo
         </button>
       </div>
 
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar templates..."
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar modelos..."
             className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] text-sm" />
         </div>
       </div>
@@ -153,8 +153,8 @@ export default function TemplatesClient() {
       ) : templates.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <FileCode2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">Nenhum template encontrado</p>
-          <button onClick={openCreate} className="text-emerald-600 hover:underline text-sm mt-1">Criar template</button>
+          <p className="font-medium">Nenhum modelo encontrado</p>
+          <button onClick={openCreate} className="text-emerald-600 hover:underline text-sm mt-1">Criar modelo</button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -207,13 +207,13 @@ export default function TemplatesClient() {
             <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
               className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between p-6 border-b border-gray-100">
-                <h2 className="text-lg font-bold text-gray-900">{editId ? "Editar" : "Novo"} Template</h2>
+                <h2 className="text-lg font-bold text-gray-900">{editId ? "Editar" : "Novo"} Modelo</h2>
                 <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
-                  <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nome do template"
+                  <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nome do modelo"
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] text-sm" />
                 </div>
                 <div>
@@ -256,7 +256,7 @@ export default function TemplatesClient() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Conteúdo *</label>
                   <textarea value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} rows={12}
-                    placeholder="Digite o conteúdo do template aqui. Use {variavel} para campos dinâmicos."
+                    placeholder="Digite o conteúdo do modelo aqui. Use {variavel} para campos dinâmicos."
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] text-sm font-mono resize-y" />
                 </div>
               </div>

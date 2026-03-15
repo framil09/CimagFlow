@@ -38,7 +38,7 @@ const ALL_MODULES = [
   { key: "demandas", label: "Demandas", icon: ClipboardList },
   { key: "pastas", label: "Pastas", icon: FolderOpen },
   { key: "para-assinar", label: "Para Assinar", icon: PenLine },
-  { key: "templates", label: "Templates", icon: FileCode2 },
+  { key: "templates", label: "Modelos", icon: FileCode2 },
   { key: "assinantes", label: "Assinantes", icon: Users },
   { key: "prefeituras", label: "Prefeituras", icon: Building2 },
   { key: "empresas", label: "Empresas", icon: Building },
