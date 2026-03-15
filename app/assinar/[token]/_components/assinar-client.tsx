@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { CheckCircle2, XCircle, FileText, User, Calendar, Loader2, PenLine, Eye } from "lucide-react";
+import { CheckCircle2, XCircle, FileText, User, Calendar, Loader2, PenLine, Eye, Eraser, AlertTriangle } from "lucide-react";
+import SignatureCanvas from "react-signature-canvas";
 
 export default function AssinarClient({ token }: { token: string }) {
   const [data, setData] = useState<any>(null);
@@ -14,6 +15,12 @@ export default function AssinarClient({ token }: { token: string }) {
   const [showPdf, setShowPdf] = useState(false);
   const [showContent, setShowContent] = useState(false);
   const [error, setError] = useState("");
+
+  // CPF + Signature state
+  const [cpf, setCpf] = useState("");
+  const [cpfError, setCpfError] = useState("");
+  const [signatureEmpty, setSignatureEmpty] = useState(true);
+  const sigCanvas = useRef<SignatureCanvas>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -28,13 +35,69 @@ export default function AssinarClient({ token }: { token: string }) {
     fetchData();
   }, [token]);
 
+  // Format CPF: 000.000.000-00
+  const formatCpf = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+    if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+  };
+
+  const validateCpf = (cpfStr: string): boolean => {
+    const digits = cpfStr.replace(/\D/g, "");
+    if (digits.length !== 11) return false;
+    if (/^(\d)\1+$/.test(digits)) return false;
+    let sum = 0;
+    for (let i = 0; i < 9; i++) sum += parseInt(digits[i]) * (10 - i);
+    let rem = (sum * 10) % 11;
+    if (rem === 10) rem = 0;
+    if (rem !== parseInt(digits[9])) return false;
+    sum = 0;
+    for (let i = 0; i < 10; i++) sum += parseInt(digits[i]) * (11 - i);
+    rem = (sum * 10) % 11;
+    if (rem === 10) rem = 0;
+    return rem === parseInt(digits[10]);
+  };
+
+  const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCpf(e.target.value);
+    setCpf(formatted);
+    setCpfError("");
+  };
+
+  const clearSignature = () => {
+    sigCanvas.current?.clear();
+    setSignatureEmpty(true);
+  };
+
   const handleAction = async (action: "sign" | "refuse") => {
+    if (action === "sign") {
+      // Validate CPF
+      if (!validateCpf(cpf)) {
+        setCpfError("CPF inválido. Verifique e tente novamente.");
+        return;
+      }
+      // Validate signature
+      if (sigCanvas.current?.isEmpty()) {
+        setSignatureEmpty(true);
+        return;
+      }
+    }
+
     setProcessing(true);
     try {
+      const payload: any = { action };
+
+      if (action === "sign") {
+        payload.cpf = cpf.replace(/\D/g, "");
+        payload.signatureImage = sigCanvas.current?.getCanvas().toDataURL("image/png");
+      }
+
       const res = await fetch(`/api/sign/${token}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify(payload),
       });
       const json = await res.json();
       if (res.ok) { setResult(action === "sign" ? "signed" : "refused"); setDone(true); }
@@ -183,9 +246,70 @@ export default function AssinarClient({ token }: { token: string }) {
           )}
         </motion.div>
 
+        {/* CPF + Assinatura */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
           className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-          <h3 className="font-semibold text-gray-800 mb-4">Sua decisão</h3>
+          <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <PenLine className="w-5 h-5 text-[#1E3A5F]" /> Assinar Documento
+          </h3>
+
+          {/* CPF Input */}
+          <div className="mb-5">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              CPF do Assinante
+            </label>
+            <input
+              type="text"
+              value={cpf}
+              onChange={handleCpfChange}
+              placeholder="000.000.000-00"
+              maxLength={14}
+              className={`w-full px-4 py-3 rounded-xl border text-sm font-mono tracking-wider transition-colors focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 ${
+                cpfError ? "border-red-300 bg-red-50" : "border-gray-200 bg-gray-50 focus:border-[#1E3A5F]"
+              }`}
+            />
+            {cpfError && (
+              <p className="flex items-center gap-1 text-xs text-red-500 mt-1.5">
+                <AlertTriangle className="w-3 h-3" /> {cpfError}
+              </p>
+            )}
+          </div>
+
+          {/* Signature Pad */}
+          <div className="mb-5">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-sm font-medium text-gray-700">
+                Desenhe sua Assinatura
+              </label>
+              <button
+                type="button"
+                onClick={clearSignature}
+                className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-500 transition-colors"
+              >
+                <Eraser className="w-3.5 h-3.5" /> Limpar
+              </button>
+            </div>
+            <div className={`rounded-xl border-2 border-dashed bg-white overflow-hidden transition-colors ${
+              signatureEmpty && !sigCanvas.current?.isEmpty() ? "border-gray-200" : signatureEmpty ? "border-gray-200" : "border-emerald-300"
+            }`}>
+              <SignatureCanvas
+                ref={sigCanvas}
+                penColor="#1E3A5F"
+                canvasProps={{
+                  className: "w-full",
+                  style: { width: "100%", height: 160 },
+                }}
+                onBegin={() => setSignatureEmpty(false)}
+              />
+            </div>
+            {signatureEmpty && (
+              <p className="text-xs text-gray-400 mt-1.5 text-center">
+                Use o mouse ou o dedo para desenhar sua assinatura acima
+              </p>
+            )}
+          </div>
+
+          {/* Buttons */}
           <div className="flex gap-3">
             <button
               onClick={() => handleAction("refuse")}
@@ -196,15 +320,15 @@ export default function AssinarClient({ token }: { token: string }) {
             </button>
             <button
               onClick={() => handleAction("sign")}
-              disabled={processing}
-              className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold text-sm transition-colors disabled:opacity-50 shadow-lg"
+              disabled={processing || cpf.replace(/\D/g, "").length < 11 || signatureEmpty}
+              className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold text-sm transition-colors disabled:opacity-50 shadow-lg disabled:shadow-none"
             >
               {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <PenLine className="w-5 h-5" />}
               Assinar Documento
             </button>
           </div>
           <p className="text-xs text-gray-400 text-center mt-3">
-            Ao assinar, você concorda com o conteúdo do documento acima.
+            Ao assinar, você concorda com o conteúdo do documento acima. Seu CPF e assinatura serão registrados.
           </p>
         </motion.div>
 

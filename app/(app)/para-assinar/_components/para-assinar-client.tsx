@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   PenLine, Clock, CheckCircle2, Loader2, FileText, Copy, Check, 
   ExternalLink, FolderOpen, Users, ChevronDown, ChevronUp, Send,
-  XCircle, AlertCircle, Link2
+  XCircle, AlertCircle, Link2, Bell, Mail
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
@@ -16,7 +16,7 @@ interface Signer {
   token: string;
   status: string;
   signedAt: string | null;
-  signer: { id: string; name: string; email: string };
+  signer: { id: string; name: string; email: string; cpf?: string };
 }
 
 interface Document {
@@ -39,6 +39,28 @@ export default function ParaAssinarClient() {
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [showLinkModal, setShowLinkModal] = useState<{ token: string; name: string } | null>(null);
+  const [notifyingDoc, setNotifyingDoc] = useState<string | null>(null);
+
+  const notifyPending = async (docId: string) => {
+    setNotifyingDoc(docId);
+    try {
+      const res = await fetch("/api/para-assinar/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentId: docId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(`Notificação enviada para ${data.notified} assinante${data.notified > 1 ? "s" : ""}`);
+      } else {
+        toast.error(data.error ?? "Erro ao notificar");
+      }
+    } catch (e) {
+      toast.error("Erro ao enviar notificações");
+    } finally {
+      setNotifyingDoc(null);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -279,7 +301,12 @@ export default function ParaAssinarClient() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium text-gray-900 text-sm">{signer.signer.name}</p>
-                                <p className="text-xs text-gray-500">{signer.signer.email}</p>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-xs text-gray-500">{signer.signer.email}</p>
+                                  {signer.signer.cpf && (
+                                    <span className="text-xs text-gray-400 font-mono">CPF: {signer.signer.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")}</span>
+                                  )}
+                                </div>
                               </div>
                               {getStatusBadge(signer.status)}
                               {signer.status === "PENDENTE" && (
@@ -321,10 +348,20 @@ export default function ParaAssinarClient() {
                             </div>
                           ))}
                         </div>
-                        <div className="flex justify-end mt-3">
+                        <div className="flex items-center justify-between mt-3">
+                          {doc.stats.pending > 0 && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); notifyPending(doc.id); }}
+                              disabled={notifyingDoc === doc.id}
+                              className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs font-medium hover:bg-amber-100 transition-colors disabled:opacity-50"
+                            >
+                              {notifyingDoc === doc.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
+                              Notificar Pendentes
+                            </button>
+                          )}
                           <Link
                             href={`/documentos/${doc.id}`}
-                            className="flex items-center gap-2 text-sm text-[#1E3A5F] hover:underline"
+                            className="flex items-center gap-2 text-sm text-[#1E3A5F] hover:underline ml-auto"
                           >
                             Ver detalhes do documento <ExternalLink className="w-4 h-4" />
                           </Link>

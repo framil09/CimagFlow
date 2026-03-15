@@ -45,7 +45,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
 export async function POST(req: Request, { params }: { params: { token: string } }) {
   try {
     const body = await req.json();
-    const { action } = body; // "sign" or "refuse"
+    const { action, cpf, signatureImage } = body; // "sign" or "refuse"
 
     const ds = await prisma.documentSigner.findUnique({
       where: { token: params.token },
@@ -67,9 +67,13 @@ export async function POST(req: Request, { params }: { params: { token: string }
     const forwardedFor = req.headers.get("x-forwarded-for");
     const ip = forwardedFor?.split(",")?.[0] ?? null;
 
+    const updateData: any = { status: newStatus, signedAt: new Date(), tokenUsedAt: new Date(), ipAddress: ip };
+    if (action === "sign" && cpf) updateData.cpfUsed = cpf.replace(/\D/g, "");
+    if (action === "sign" && signatureImage) updateData.signatureImage = signatureImage;
+
     await prisma.documentSigner.update({
       where: { token: params.token },
-      data: { status: newStatus, signedAt: new Date(), tokenUsedAt: new Date(), ipAddress: ip },
+      data: updateData,
     });
 
     // Check if all signed
