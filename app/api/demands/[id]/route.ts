@@ -226,6 +226,75 @@ export async function PATCH(
       });
     }
 
+    // Registrar alteração de data limite e notificar o solicitante
+    if (dueDate !== undefined) {
+      const oldDate = currentDemand.dueDate
+        ? new Date(currentDemand.dueDate).toLocaleDateString("pt-BR")
+        : "Não definida";
+      const newDate = dueDate
+        ? new Date(dueDate).toLocaleDateString("pt-BR")
+        : "Removida";
+
+      if (
+        (dueDate && !currentDemand.dueDate) ||
+        (!dueDate && currentDemand.dueDate) ||
+        (dueDate && currentDemand.dueDate && new Date(dueDate).toISOString() !== new Date(currentDemand.dueDate).toISOString())
+      ) {
+        historyRecords.push({
+          demandId: demand.id,
+          userName: session.user.name || "Sistema",
+          action: "PRAZO_ALTERADO",
+          oldValue: oldDate,
+          newValue: newDate,
+          comment: `Data limite alterada de ${oldDate} para ${newDate}`,
+        });
+
+        // Notificar solicitante por email
+        if (demand.requesterEmail) {
+          const appUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || "https://cimagflow.app";
+          const consultaUrl = `${appUrl}/consulta-protocolo`;
+
+          try {
+            await sendEmail({
+              to: demand.requesterEmail,
+              subject: `Prazo Atualizado - Protocolo ${demand.protocolNumber}`,
+              notificationId: `duedate-${demand.id}-${Date.now()}`,
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc;">
+                  <div style="background: linear-gradient(135deg, #1E3A5F 0%, #10B981 100%); padding: 32px; text-align: center;">
+                    <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">📅 CimagFlow</h1>
+                    <p style="color: rgba(255,255,255,0.85); margin: 8px 0 0;">Atualização de Prazo</p>
+                  </div>
+                  <div style="background: white; padding: 32px; border-radius: 0 0 8px 8px;">
+                    <p style="font-size: 16px; color: #374151;">Olá, <strong>${demand.requesterName}</strong>!</p>
+                    <p style="color: #6B7280;">O prazo da sua demanda foi atualizado.</p>
+                    <div style="background: #F0FDF4; border-left: 4px solid #10B981; padding: 16px; border-radius: 4px; margin: 20px 0;">
+                      <p style="margin: 0 0 8px; font-size: 14px; color: #6B7280;">Demanda:</p>
+                      <p style="margin: 0; font-size: 16px; font-weight: 600; color: #1E3A5F;">${demand.title}</p>
+                      <p style="margin: 8px 0 0; font-size: 14px; color: #6B7280;">Protocolo: <strong>${demand.protocolNumber}</strong></p>
+                    </div>
+                    <div style="background: #FFF7ED; border-left: 4px solid #F97316; padding: 16px; border-radius: 4px; margin: 20px 0;">
+                      <p style="margin: 0 0 8px; font-size: 14px; color: #6B7280;">Nova data limite:</p>
+                      <p style="margin: 0; font-size: 20px; font-weight: 700; color: #EA580C;">${newDate}</p>
+                      ${oldDate !== "Não definida" ? `<p style="margin: 8px 0 0; font-size: 12px; color: #9CA3AF;">Anterior: ${oldDate}</p>` : ""}
+                    </div>
+                    <p style="color: #6B7280; font-size: 14px;">Você pode acompanhar o andamento da sua demanda consultando o protocolo:</p>
+                    <div style="text-align: center; margin: 32px 0;">
+                      <a href="${consultaUrl}" style="background: linear-gradient(135deg, #1E3A5F, #10B981); color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600; display: inline-block;">🔍 Consultar Protocolo</a>
+                    </div>
+                    <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;" />
+                    <p style="color: #9CA3AF; font-size: 12px; text-align: center;">Este e-mail foi enviado pelo CimagFlow. Não responda a este e-mail.</p>
+                  </div>
+                </div>
+              `,
+            });
+          } catch (emailError) {
+            console.error("Erro ao enviar email de prazo:", emailError);
+          }
+        }
+      }
+    }
+
     // Criar todos os registros de histórico
     if (historyRecords.length > 0) {
       await prisma.demandHistory.createMany({

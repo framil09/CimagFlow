@@ -19,7 +19,7 @@ export async function GET(
         history: {
           where: {
             action: {
-              in: ["CRIADA", "STATUS_ALTERADO", "CONCLUIDA", "PENDENCIA_ENVIADA", "RESPOSTA_SOLICITANTE"],
+              in: ["CRIADA", "STATUS_ALTERADO", "CONCLUIDA", "PENDENCIA_ENVIADA", "RESPOSTA_SOLICITANTE", "CONTRATO_GERADO", "PRAZO_ALTERADO"],
             },
           },
           orderBy: { createdAt: "desc" },
@@ -29,6 +29,15 @@ export async function GET(
             comment: true,
             createdAt: true,
           },
+        },
+        documents: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: "desc" },
         },
       },
     });
@@ -46,11 +55,13 @@ export async function GET(
       title: demand.title,
       status: demand.status,
       priority: demand.priority,
+      dueDate: demand.dueDate,
       createdAt: demand.createdAt,
       updatedAt: demand.updatedAt,
       resolvedAt: demand.resolvedAt,
       prefecture: demand.prefecture,
       history: demand.history,
+      documents: demand.documents,
     });
   } catch (error: any) {
     console.error("Erro ao buscar protocolo:", error);

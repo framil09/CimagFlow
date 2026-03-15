@@ -7,7 +7,8 @@ import {
   FileText, ArrowLeft, Save, Send, Loader2, Building2, Landmark,
   FileCode2, FolderOpen, Users, ChevronDown, ChevronUp, Check, AlertCircle,
   Sparkles, RefreshCw, Maximize2, Minimize2, Edit2, Bold, Italic,
-  Underline, AlignLeft, AlignCenter, AlignRight, AlignJustify, Undo2, Redo2
+  Underline, AlignLeft, AlignCenter, AlignRight, AlignJustify, Undo2, Redo2,
+  ClipboardList
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
@@ -73,12 +74,14 @@ export default function UsarModeloClient({ templateId }: UsarModeloClientProps) 
   const [bids, setBids] = useState<any[]>([]);
   const [folders, setFolders] = useState<any[]>([]);
   const [signers, setSigners] = useState<any[]>([]);
+  const [demands, setDemands] = useState<any[]>([]);
 
   const [selectedPrefecture, setSelectedPrefecture] = useState("");
   const [selectedCompany, setSelectedCompany] = useState("");
   const [selectedBid, setSelectedBid] = useState("");
   const [selectedFolder, setSelectedFolder] = useState("");
   const [selectedSigners, setSelectedSigners] = useState<string[]>([]);
+  const [selectedDemand, setSelectedDemand] = useState("");
   const [variables, setVariables] = useState<Record<string, string>>({});
   const [title, setTitle] = useState("");
   const [sendAfterCreate, setSendAfterCreate] = useState(false);
@@ -103,6 +106,7 @@ export default function UsarModeloClient({ templateId }: UsarModeloClientProps) 
         setBids(data.bids || []);
         setFolders(data.folders || []);
         setSigners(data.signers || []);
+        setDemands(data.demands || []);
         setTitle(data.template.name);
 
         // Extrair variáveis do template
@@ -259,6 +263,7 @@ export default function UsarModeloClient({ templateId }: UsarModeloClientProps) 
           folderId: selectedFolder || null,
           signerIds: selectedSigners,
           sendAfterCreate: send,
+          demandId: selectedDemand || null,
         }),
       });
       
@@ -462,6 +467,30 @@ export default function UsarModeloClient({ templateId }: UsarModeloClientProps) 
                 {selectedPrefecture && filteredFolders.length === 0 && (
                   <p className="text-[10px] text-amber-600 mt-1.5 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" /> Nenhuma pasta para esta prefeitura
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Vincular Demanda */}
+            {demands.length > 0 && (
+              <div className="bg-white/70 rounded-xl p-3 border border-emerald-100/80">
+                <label className="text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-1.5">
+                  <ClipboardList className="w-3.5 h-3.5 text-emerald-600" /> Vincular à Demanda
+                  <span className="text-[10px] text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">Opcional</span>
+                </label>
+                <select value={selectedDemand} onChange={e => setSelectedDemand(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 bg-white">
+                  <option value="">Nenhuma demanda</option>
+                  {demands.map((d: any) => (
+                    <option key={d.id} value={d.id}>
+                      {d.protocolNumber} - {d.title} {d.requesterName ? `(${d.requesterName})` : ""}
+                    </option>
+                  ))}
+                </select>
+                {selectedDemand && (
+                  <p className="text-[10px] text-emerald-600 mt-1.5 flex items-center gap-1">
+                    <Check className="w-3 h-3" /> O solicitante será notificado por e-mail
                   </p>
                 )}
               </div>
