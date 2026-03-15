@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Edit2, Save, X, Clock, User, Mail, Phone, Building2, Calendar, FileText, Trash2, Paperclip, Download, Upload, Send, AlertTriangle, MessageCircle, CheckCircle2, XCircle, Timer, Eye, Loader2, Hash, Shield, ChevronRight } from "lucide-react";
+import { ArrowLeft, Edit2, Save, X, Clock, User, Mail, Phone, Building2, Calendar, FileText, Trash2, Paperclip, Download, Upload, Send, AlertTriangle, MessageCircle, CheckCircle2, XCircle, Timer, Eye, Loader2, Hash, Shield, ChevronRight, CalendarClock, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +36,8 @@ const actionLabels: Record<string, string> = {
   STATUS_ALTERADO: "Status alterado",
   ATRIBUICAO_ALTERADA: "Atribuição alterada",
   PRIORIDADE_ALTERADA: "Prioridade alterada",
+  PRAZO_ALTERADO: "Prazo atualizado",
+  CONTRATO_GERADO: "Contrato gerado",
 };
 
 export default function DemandaDetalhesPage() {
@@ -59,6 +61,9 @@ export default function DemandaDetalhesPage() {
   const [messageFiles, setMessageFiles] = useState<string[]>([]);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [isPendency, setIsPendency] = useState(false);
+  const [editingDueDate, setEditingDueDate] = useState(false);
+  const [newDueDate, setNewDueDate] = useState("");
+  const [savingDueDate, setSavingDueDate] = useState(false);
 
   useEffect(() => {
     loadDemand();
@@ -222,6 +227,25 @@ export default function DemandaDetalhesPage() {
       toast.error("Erro ao enviar mensagem");
     } finally {
       setSendingMessage(false);
+    }
+  };
+
+  const handleSaveDueDate = async () => {
+    setSavingDueDate(true);
+    try {
+      const res = await fetch(`/api/demands/${params.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dueDate: newDueDate || null }),
+      });
+      if (!res.ok) throw new Error("Erro ao atualizar data");
+      toast.success("Data limite atualizada! O solicitante será notificado.");
+      setEditingDueDate(false);
+      loadDemand();
+    } catch (error) {
+      toast.error("Erro ao atualizar data limite");
+    } finally {
+      setSavingDueDate(false);
     }
   };
 
@@ -937,17 +961,73 @@ export default function DemandaDetalhesPage() {
                 <span className="text-xs text-muted-foreground">Atualizada em</span>
                 <span className="text-xs font-medium">{formatDateTime(demand.updatedAt)}</span>
               </div>
-              {demand.dueDate && (
-                <>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Data Limite</span>
+              <Separator />
+              {/* Data Limite - editável */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <CalendarClock className="h-3 w-3" /> Data Limite
+                  </span>
+                  {!editingDueDate ? (
+                    <button
+                      onClick={() => {
+                        setNewDueDate(demand.dueDate ? new Date(demand.dueDate).toISOString().split("T")[0] : "");
+                        setEditingDueDate(true);
+                      }}
+                      className="text-[10px] text-[#1E3A5F] dark:text-blue-400 hover:underline font-medium flex items-center gap-1"
+                    >
+                      <Edit2 className="h-2.5 w-2.5" />
+                      {demand.dueDate ? "Alterar" : "Definir"}
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setEditingDueDate(false)}
+                        className="text-[10px] text-muted-foreground hover:text-red-500"
+                        disabled={savingDueDate}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {editingDueDate ? (
+                  <div className="space-y-2">
+                    <Input
+                      type="date"
+                      value={newDueDate}
+                      onChange={(e) => setNewDueDate(e.target.value)}
+                      className="h-8 text-xs"
+                      disabled={savingDueDate}
+                    />
+                    <Button
+                      size="sm"
+                      onClick={handleSaveDueDate}
+                      disabled={savingDueDate}
+                      className="w-full h-7 text-xs bg-[#1E3A5F] hover:bg-[#162d4a] text-white"
+                    >
+                      {savingDueDate ? (
+                        <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                      ) : (
+                        <Bell className="h-3 w-3 mr-1" />
+                      )}
+                      Salvar e Notificar
+                    </Button>
+                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <Bell className="h-2.5 w-2.5" />
+                      O solicitante será notificado por e-mail
+                    </p>
+                  </div>
+                ) : (
+                  demand.dueDate ? (
                     <Badge variant="outline" className="text-xs font-medium text-orange-600 border-orange-200 dark:text-orange-400 dark:border-orange-800">
                       {formatDate(demand.dueDate)}
                     </Badge>
-                  </div>
-                </>
-              )}
+                  ) : (
+                    <span className="text-xs text-muted-foreground italic">Não definida</span>
+                  )
+                )}
+              </div>
               {demand.resolvedAt && (
                 <>
                   <Separator />

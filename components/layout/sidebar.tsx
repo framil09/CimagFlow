@@ -19,16 +19,14 @@ import {
   Building,
   ScrollText,
   UserCog,
-  Bell,
   BarChart3,
   History,
   ClipboardList,
   FileCheck,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
-import NotificationsPopup from "./notifications-popup";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -53,13 +51,12 @@ const adminNavItems = [
 interface SidebarProps {
   userName?: string;
   userRole?: string;
+  onCollapseChange?: (collapsed: boolean) => void;
 }
 
-export default function Sidebar({ userName, userRole }: SidebarProps) {
+export default function Sidebar({ userName, userRole, onCollapseChange }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { data: session } = useSession() ?? {};
 
   const userPermissions: string[] = (session?.user as any)?.permissions ?? [];
@@ -72,25 +69,9 @@ export default function Sidebar({ userName, userRole }: SidebarProps) {
         return userPermissions.includes(moduleKey);
       });
 
-  const fetchUnreadCount = useCallback(async () => {
-    try {
-      const res = await fetch("/api/notifications?unread=true");
-      if (res.ok) {
-        const data = await res.json();
-        setUnreadCount(data.unreadCount || data.notifications?.length || 0);
-      }
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    }
-  }, []);
-
   useEffect(() => {
-    if (!session?.user) return;
-    
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
-  }, [session, fetchUnreadCount]);
+    onCollapseChange?.(collapsed);
+  }, [collapsed, onCollapseChange]);
 
   return (
     <motion.aside
@@ -122,7 +103,7 @@ export default function Sidebar({ userName, userRole }: SidebarProps) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto sidebar-scroll">
         {visibleNavItems.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + "/");
           return (
@@ -151,57 +132,6 @@ export default function Sidebar({ userName, userRole }: SidebarProps) {
             </Link>
           );
         })}
-        
-        {/* Notificações com Badge */}
-        <button
-          onClick={() => setNotificationsOpen(!notificationsOpen)}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all group relative ${
-            notificationsOpen
-              ? "bg-emerald-500 text-white shadow-lg"
-              : "text-blue-200 hover:bg-white/10 hover:text-white"
-          }`}
-        >
-          <div className="relative flex-shrink-0">
-            <Bell className="w-5 h-5" />
-            {unreadCount > 0 && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center"
-              >
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </motion.span>
-            )}
-          </div>
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex items-center justify-between flex-1"
-              >
-                <span className="text-sm font-medium whitespace-nowrap">
-                  Notificações
-                </span>
-                {unreadCount > 0 && (
-                  <span className="bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 px-2 flex items-center justify-center">
-                    {unreadCount > 99 ? "99+" : unreadCount}
-                  </span>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </button>
-        
-        {/* Notifications Popup */}
-        <NotificationsPopup
-          isOpen={notificationsOpen}
-          onClose={() => setNotificationsOpen(false)}
-          unreadCount={unreadCount}
-          onUpdate={fetchUnreadCount}
-          collapsed={collapsed}
-        />
         
         {/* Admin Only Items */}
         {userRole === "ADMIN" && (

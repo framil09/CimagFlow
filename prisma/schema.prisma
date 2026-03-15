@@ -118,6 +118,7 @@ model Document {
   folderId    String?
   bidId       String?
   templateId  String?
+  demandId    String?
   createdBy   String
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -126,6 +127,7 @@ model Document {
   folder      Folder?        @relation(fields: [folderId], references: [id])
   bid         Bid?           @relation(fields: [bidId], references: [id])
   template    Template?      @relation(fields: [templateId], references: [id])
+  demand      Demand?        @relation(fields: [demandId], references: [id])
   signers     DocumentSigner[]
 
   @@map("documents")
@@ -371,6 +373,7 @@ model Demand {
   assignedTo      User?          @relation("DemandAssigned", fields: [assignedToId], references: [id])
   creator         User?          @relation("DemandCreator", fields: [createdBy], references: [id])
   history         DemandHistory[]
+  documents       Document[]
   
   @@index([protocolNumber])
   @@index([status])

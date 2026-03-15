@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, FileText, Clock, CheckCircle2, AlertCircle, Paperclip, Download, AlertTriangle, Send } from "lucide-react";
+import { Search, FileText, Clock, CheckCircle2, AlertCircle, Paperclip, Download, AlertTriangle, Send, FileCheck2, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -186,6 +186,19 @@ export default function ConsultaProtocoloPage() {
                 </div>
               </div>
 
+              {demand.dueDate && (
+                <>
+                  <Separator className="my-4" />
+                  <div className="flex items-center gap-2">
+                    <CalendarClock className="h-4 w-4 text-orange-500" />
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Data Limite / Prazo</p>
+                      <p className="font-semibold text-orange-600">{formatDate(demand.dueDate)}</p>
+                    </div>
+                  </div>
+                </>
+              )}
+
               {demand.resolvedAt && (
                 <>
                   <Separator className="my-4" />
@@ -196,6 +209,42 @@ export default function ConsultaProtocoloPage() {
                 </>
               )}
             </Card>
+
+            {/* Contratos Gerados */}
+            {demand.documents && demand.documents.length > 0 && (
+              <Card className="p-6 border-emerald-200 bg-emerald-50/50">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-emerald-900">
+                  <FileCheck2 className="h-5 w-5" />
+                  Contrato(s) Gerado(s)
+                </h3>
+                <div className="space-y-3">
+                  {demand.documents.map((doc: any) => (
+                    <div key={doc.id} className="flex items-center gap-3 p-4 bg-white border border-emerald-200 rounded-lg">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                        <FileText className="h-5 w-5 text-emerald-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{doc.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Gerado em {formatDateTime(doc.createdAt)}
+                        </p>
+                      </div>
+                      <Badge className={
+                        doc.status === "CONCLUIDO" ? "bg-green-500" :
+                        doc.status === "EM_ANDAMENTO" ? "bg-orange-500" :
+                        doc.status === "CANCELADO" ? "bg-red-500" :
+                        "bg-blue-500"
+                      }>
+                        {doc.status === "RASCUNHO" ? "Em Elaboração" :
+                         doc.status === "EM_ANDAMENTO" ? "Em Assinatura" :
+                         doc.status === "CONCLUIDO" ? "Assinado" :
+                         "Cancelado"}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
 
             {/* Arquivos Enviados */}
             {demand.attachments && demand.attachments.length > 0 && (
@@ -304,15 +353,15 @@ export default function ConsultaProtocoloPage() {
                   demand.history.map((item: any, index: number) => (
                     <div key={index} className="flex gap-4">
                       <div className="flex flex-col items-center">
-                        <div className={`w-3 h-3 rounded-full ${item.action === "PENDENCIA_ENVIADA" ? "bg-amber-500" : item.action === "RESPOSTA_SOLICITANTE" ? "bg-emerald-500" : "bg-primary"}`} />
+                        <div className={`w-3 h-3 rounded-full ${item.action === "PENDENCIA_ENVIADA" ? "bg-amber-500" : item.action === "RESPOSTA_SOLICITANTE" ? "bg-emerald-500" : item.action === "CONTRATO_GERADO" ? "bg-blue-500" : item.action === "PRAZO_ALTERADO" ? "bg-orange-500" : "bg-primary"}`} />
                         {index < demand.history.length - 1 && (
                           <div className="w-0.5 h-full bg-border mt-2" />
                         )}
                       </div>
                       <div className="flex-1 pb-4">
                         <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline" className={item.action === "PENDENCIA_ENVIADA" ? "border-amber-500 text-amber-700" : item.action === "RESPOSTA_SOLICITANTE" ? "border-emerald-500 text-emerald-700" : ""}>
-                            {item.action === "PENDENCIA_ENVIADA" ? "Pendência Enviada" : item.action === "RESPOSTA_SOLICITANTE" ? "Sua Resposta" : item.action}
+                          <Badge variant="outline" className={item.action === "PENDENCIA_ENVIADA" ? "border-amber-500 text-amber-700" : item.action === "RESPOSTA_SOLICITANTE" ? "border-emerald-500 text-emerald-700" : item.action === "CONTRATO_GERADO" ? "border-blue-500 text-blue-700" : item.action === "PRAZO_ALTERADO" ? "border-orange-500 text-orange-700" : ""}>
+                            {item.action === "PENDENCIA_ENVIADA" ? "Pendência Enviada" : item.action === "RESPOSTA_SOLICITANTE" ? "Sua Resposta" : item.action === "CONTRATO_GERADO" ? "Contrato Gerado" : item.action === "PRAZO_ALTERADO" ? "Prazo Atualizado" : item.action}
                           </Badge>
                           <span className="text-sm text-muted-foreground">
                             {formatDateTime(item.createdAt)}

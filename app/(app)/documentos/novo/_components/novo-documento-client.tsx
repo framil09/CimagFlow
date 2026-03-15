@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, FileText, Users, Settings, ChevronRight, ChevronLeft, Check, X, Search, Loader2, Wand2, FolderOpen } from "lucide-react";
+import { Upload, FileText, Users, Settings, ChevronRight, ChevronLeft, Check, X, Search, Loader2, Wand2, FolderOpen, Sparkles, ArrowRight } from "lucide-react";
 
 const steps = [
   { id: 1, label: "Documento", icon: FileText },
@@ -24,8 +24,8 @@ export default function NovoDocumentoClient() {
   const [uploadedPath, setUploadedPath] = useState("");
   const [useTemplate, setUseTemplate] = useState(false);
   const [templates, setTemplates] = useState<any[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
-  const [templateVars, setTemplateVars] = useState<Record<string, string>>({});
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [templateSearch, setTemplateSearch] = useState("");
   const [signerSearch, setSignerSearch] = useState("");
   const [signerResults, setSignerResults] = useState<any[]>([]);
   const [selectedSigners, setSelectedSigners] = useState<any[]>([]);
@@ -60,9 +60,14 @@ export default function NovoDocumentoClient() {
   };
 
   const loadTemplates = async () => {
-    const res = await fetch("/api/templates");
-    const data = await res.json();
-    setTemplates(data.templates ?? []);
+    setLoadingTemplates(true);
+    try {
+      const res = await fetch("/api/templates");
+      const data = await res.json();
+      setTemplates(data.templates ?? []);
+    } finally {
+      setLoadingTemplates(false);
+    }
   };
 
   const searchSigners = useCallback(async (q: string) => {
@@ -184,23 +189,68 @@ export default function NovoDocumentoClient() {
             )}
             {useTemplate && (
               <div className="space-y-3">
-                <select value={selectedTemplate?.id ?? ""}
-                  onChange={(e) => { const t = templates.find((t) => t.id === e.target.value); setSelectedTemplate(t ?? null); setTemplateVars({}); }}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] text-sm">
-                  <option value="">Selecione um template</option>
-                  {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-                {(selectedTemplate?.variables?.length ?? 0) > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-700">Variáveis:</p>
-                    {selectedTemplate.variables.map((v: string) => (
-                      <div key={v}>
-                        <label className="block text-xs text-gray-500 mb-1">{`{${v}}`}</label>
-                        <input type="text" value={templateVars[v] ?? ""} onChange={(e) => setTemplateVars({ ...templateVars, [v]: e.target.value })}
-                          placeholder={`Valor para {${v}}`}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]" />
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={templateSearch}
+                    onChange={(e) => setTemplateSearch(e.target.value)}
+                    placeholder="Buscar modelo..."
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F] text-sm"
+                  />
+                </div>
+                {loadingTemplates ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-[#1E3A5F]" />
+                    <span className="ml-2 text-sm text-gray-500">Carregando modelos...</span>
+                  </div>
+                ) : templates.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400">
+                    <Wand2 className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Nenhum modelo encontrado</p>
+                    <button
+                      onClick={() => router.push("/templates")}
+                      className="mt-2 text-xs text-[#1E3A5F] hover:underline font-medium"
+                    >
+                      Criar um modelo
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid gap-2 max-h-[340px] overflow-y-auto pr-1">
+                    {templates
+                      .filter((t) => !templateSearch || t.name.toLowerCase().includes(templateSearch.toLowerCase()))
+                      .map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => router.push(`/templates/${t.id}/usar`)}
+                          className="group flex items-center gap-3 p-3 border border-gray-200 rounded-xl hover:border-[#1E3A5F]/40 hover:bg-blue-50/50 transition-all text-left w-full"
+                        >
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#1E3A5F]/10 to-emerald-500/10 flex items-center justify-center shrink-0 group-hover:from-[#1E3A5F]/20 group-hover:to-emerald-500/20 transition-colors">
+                            <FileText className="w-5 h-5 text-[#1E3A5F]" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-800 truncate group-hover:text-[#1E3A5F] transition-colors">
+                              {t.name}
+                            </p>
+                            {t.description && (
+                              <p className="text-xs text-gray-400 truncate">{t.description}</p>
+                            )}
+                            {t.variables?.length > 0 && (
+                              <p className="text-[10px] text-gray-400 mt-0.5">
+                                {t.variables.length} variáve{t.variables.length !== 1 ? "is" : "l"}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-[#1E3A5F] opacity-0 group-hover:opacity-100 transition-opacity font-medium shrink-0">
+                            Usar <ArrowRight className="w-3.5 h-3.5" />
+                          </div>
+                        </button>
+                      ))}
+                    {templates.filter((t) => !templateSearch || t.name.toLowerCase().includes(templateSearch.toLowerCase())).length === 0 && (
+                      <div className="text-center py-6 text-gray-400">
+                        <p className="text-sm">Nenhum modelo encontrado para &quot;{templateSearch}&quot;</p>
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
               </div>
