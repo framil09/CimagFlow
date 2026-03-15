@@ -85,7 +85,7 @@ export default function PastasClient() {
       try {
         const res = await fetch("/api/prefectures");
         const data = await res.json();
-        setPrefectures(data.prefectures || []);
+        setPrefectures(Array.isArray(data) ? data : data.prefectures || []);
       } catch {
         console.error("Erro ao carregar prefeituras");
       }
