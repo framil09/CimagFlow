@@ -13,6 +13,11 @@ import {
   DollarSign,
   Building2,
   Clock,
+  Upload,
+  FileCheck,
+  Loader2,
+  Paperclip,
+  Download,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { format } from "date-fns";
@@ -35,6 +40,9 @@ interface Bid {
   openingDate: string | null;
   closingDate: string | null;
   value: number | null;
+  fileUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
   prefectureId: string | null;
   prefecture: Prefecture | null;
   creator: { name: string };
@@ -85,8 +93,16 @@ export default function EditaisClient() {
     openingDate: "",
     closingDate: "",
     value: "",
-    prefectureId: "",
+    fileUrl: "",
+    fileName: "",
+    fileSize: "",
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [analyzingPdf, setAnalyzingPdf] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [fileSize, setFileSize] = useState<number | null>(null);
 
   const fetchBids = useCallback(async () => {
     setLoading(true);
@@ -97,9 +113,14 @@ export default function EditaisClient() {
       if (filterType !== "TODOS") params.append("type", filterType);
 
       const res = await fetch(`/api/bids?${params}`);
+      if (!res.ok) {
+        throw new Error("Erro ao buscar editais");
+      }
       const data = await res.json();
+      console.log("Editais carregados:", data.bids);
       setBids(data.bids || []);
-    } catch {
+    } catch (error) {
+      console.error("Erro ao carregar editais:", error);
       toast.error("Erro ao carregar editais");
     } finally {
       setLoading(false);
@@ -121,30 +142,187 @@ export default function EditaisClient() {
     fetchPrefectures();
   }, [fetchBids]);
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo e tamanho
+    if (file.type !== "application/pdf") {
+      toast.error("Apenas arquivos PDF são permitidos");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Arquivo muito grande. Máximo 10MB");
+      return;
+    }
+
+    setSelectedFile(file);
+    setAnalyzingPdf(true);
+
+    try {
+      // Analisar o arquivo para extrair número e título
+      const formDataToAnalyze = new FormData();
+      formDataToAnalyze.append("file", file);
+
+      const response = await fetch("/api/bids/analyze-pdf", {
+        method: "POST",
+        body: formDataToAnalyze,
+      });
+
+      if (response.ok) {
+        const suggestions = await response.json();
+        console.log("Sugestões do PDF:", suggestions);
+
+        // Preencher campos automaticamente se estiverem vazios
+        setFormData(prev => ({
+          ...prev,
+          number: prev.number || suggestions.number || "",
+          title: prev.title || suggestions.title || "",
+          type: prev.type === "PREGAO_ELETRONICO" ? suggestions.type : prev.type,
+        }));
+
+        toast.success("Arquivo analisado! Número e título sugeridos automaticamente.");
+      }
+    } catch (error) {
+      console.error("Erro ao analisar PDF:", error);
+      toast.error("Não foi possível analisar o arquivo, mas você pode preencher manualmente");
+    } finally {
+      setAnalyzingPdf(false);
+    }
+  };
+
+  const uploadFile = async (): Promise<{ fileUrl: string; fileName: string; fileSize: number } | null> => {
+    if (!selectedFile) return null;
+
+    setUploadingFile(true);
+    try {
+      const presignedRes = await fetch("/api/upload/presigned", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fileName: selectedFile.name,
+          contentType: selectedFile.type,
+          isPublic: true,
+        }),
+      });
+
+      if (!presignedRes.ok) {
+        throw new Error("Erro ao gerar URL de upload");
+      }
+
+      const { uploadUrl, fileUrl } = await presignedRes.json();
+
+      await fetch(uploadUrl, {
+        method: "PUT",
+        body: selectedFile,
+        headers: { "Content-Type": selectedFile.type },
+      });
+
+      return { fileUrl, fileName: selectedFile.name, fileSize: selectedFile.size };
+    } catch (error) {
+      console.error("Erro ao fazer upload:", error);
+      toast.error("Erro ao enviar arquivo");
+      return null;
+    } finally {
+      setUploadingFile(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("=== INICIANDO SUBMISSÃO ===");
+    console.log("Form data:", formData);
+    
+    // Validação básica
+    if (!formData.number || !formData.title) {
+      toast.error("Preencha número e título do edital");
+      return;
+    }
+
     try {
+      // Fazer upload do arquivo se houver
+      let fileData = {
+        fileUrl: formData.fileUrl,
+        fileName: formData.fileName,
+        fileSize: formData.fileSize,
+      };
+
+      if (selectedFile) {
+        console.log("Fazendo upload do arquivo...");
+        const uploaded = await uploadFile();
+        if (uploaded) {
+          fileData = {
+            fileUrl: uploaded.fileUrl,
+            fileName: uploaded.fileName,
+            fileSize: uploaded.fileSize.toString(),
+          };
+          console.log("Arquivo enviado com sucesso:", fileData);
+        } else {
+          toast.error("Erro ao enviar arquivo. Salvando edital sem anexo.");
+          fileData = { fileUrl: "", fileName: "", fileSize: "" };
+        }
+      }
+
+      const dataToSend = { 
+        number: formData.number.trim(),
+        title: formData.title.trim(),
+        description: formData.description?.trim() || "",
+        type: formData.type,
+        status: formData.status,
+        openingDate: formData.openingDate || "",
+        closingDate: formData.closingDate || "",
+        value: formData.value || "",
+        fileUrl: fileData.fileUrl || "",
+        fileName: fileData.fileName || "",
+        fileSize: fileData.fileSize || "",
+      };
+
+      console.log("=== DADOS A ENVIAR ===");
+      console.log(JSON.stringify(dataToSend, null, 2));
+
+      let response;
       if (editingBid) {
-        await fetch(`/api/bids/${editingBid.id}`, {
+        console.log("Atualizando edital:", editingBid.id);
+        response = await fetch(`/api/bids/${editingBid.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(dataToSend),
         });
-        toast.success("Edital atualizado!");
       } else {
-        await fetch("/api/bids", {
+        console.log("Criando novo edital");
+        response = await fetch("/api/bids", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(dataToSend),
         });
-        toast.success("Edital cadastrado!");
       }
+
+      console.log("=== RESPOSTA DA API ===");
+      console.log("Status:", response.status, response.statusText);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Erro da API:", errorData);
+        throw new Error(errorData.error || errorData.details || "Erro ao salvar edital");
+      }
+
+      const result = await response.json();
+      console.log("=== EDITAL SALVO COM SUCESSO ===");
+      console.log(result);
+
+      toast.success(editingBid ? "Edital atualizado!" : "Edital cadastrado com sucesso!");
       setShowModal(false);
       setEditingBid(null);
+      setSelectedFile(null);
       resetForm();
-      fetchBids();
-    } catch {
-      toast.error("Erro ao salvar edital");
+      
+      // Recarregar a lista
+      console.log("Recarregando lista de editais...");
+      await fetchBids();
+    } catch (error) {
+      console.error("=== ERRO AO SALVAR ===");
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : "Erro ao salvar edital");
     }
   };
 
@@ -170,13 +348,34 @@ export default function EditaisClient() {
       openingDate: bid.openingDate ? bid.openingDate.split("T")[0] : "",
       closingDate: bid.closingDate ? bid.closingDate.split("T")[0] : "",
       value: bid.value?.toString() || "",
-      prefectureId: bid.prefectureId || "",
+      fileUrl: bid.fileUrl || "",
+      fileName: bid.fileName || "",
+      fileSize: bid.fileSize?.toString() || "",
     });
+    setSelectedFile(null);
     setShowModal(true);
   };
 
   const resetForm = () => {
-    setFormData({ number: "", title: "", description: "", type: "PREGAO", status: "ABERTO", openingDate: "", closingDate: "", value: "", prefectureId: "" });
+    setFormData({
+      number: "",
+      title: "",
+      description: "",
+      type: "PREGAO_ELETRONICO",
+      status: "ABERTO",
+      openingDate: "",
+      closingDate: "",
+      value: "",
+      fileUrl: "",
+      fileName: "",
+      fileSize: "",
+    });
+    setSelectedFile(null);
+    setFileUrl(null);
+    setFileName(null);
+    setFileSize(null);
+    setAnalyzingPdf(false);
+    setUploadingFile(false);
   };
 
   const getStatusBadge = (status: string) => {
@@ -294,6 +493,18 @@ export default function EditaisClient() {
                       <FileText className="w-4 h-4" />
                       <span>{bid._count.documents} documentos</span>
                     </div>
+                    {bid.fileUrl && bid.fileName && (
+                      <a
+                        href={bid.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-emerald-600 hover:text-emerald-700"
+                      >
+                        <Paperclip className="w-4 h-4" />
+                        <span>Edital PDF</span>
+                        <Download className="w-3 h-3" />
+                      </a>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -353,20 +564,71 @@ export default function EditaisClient() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
                   <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500" />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                      {BID_STATUS.map((s) => (<option key={s.value} value={s.value}>{s.label}</option>))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Prefeitura</label>
-                    <select value={formData.prefectureId} onChange={(e) => setFormData({ ...formData, prefectureId: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                      <option value="">Selecione</option>
-                      {prefectures.map((p) => (<option key={p.id} value={p.id}>{p.name} - {p.city}/{p.state}</option>))}
-                    </select>
-                  </div>
+
+                {/* PDF Upload Section */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Anexar PDF do Edital</label>
+                  {!selectedFile ? (
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                        id="pdf-upload"
+                        disabled={analyzingPdf}
+                      />
+                      <label
+                        htmlFor="pdf-upload"
+                        className="flex flex-col items-center justify-center w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-colors"
+                      >
+                        <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                        <span className="text-sm text-gray-600">Clique para selecionar um PDF</span>
+                        <span className="text-xs text-gray-400 mt-1">Máximo 10MB</span>
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 p-4 border border-gray-200 rounded-xl bg-gray-50">
+                      {analyzingPdf ? (
+                        <>
+                          <Loader2 className="w-5 h-5 text-emerald-500 animate-spin flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-700">Analisando arquivo...</p>
+                            <p className="text-xs text-gray-500">{selectedFile.name}</p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <FileCheck className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-700">{selectedFile.name}</p>
+                            <p className="text-xs text-gray-500">
+                              {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedFile(null);
+                              setFileUrl(null);
+                              setFileName(null);
+                              setFileSize(null);
+                            }}
+                            className="p-1 hover:bg-gray-200 rounded"
+                          >
+                            <X className="w-4 h-4 text-gray-500" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    {BID_STATUS.map((s) => (<option key={s.value} value={s.value}>{s.label}</option>))}
+                  </select>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -384,7 +646,9 @@ export default function EditaisClient() {
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
-                  <button type="submit" className="flex-1 px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600">Salvar</button>
+                  <button type="submit" className="flex-1 px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600">
+                    Salvar
+                  </button>
                 </div>
               </form>
             </motion.div>

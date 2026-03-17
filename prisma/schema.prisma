@@ -288,6 +288,9 @@ model Bid {
   openingDate  DateTime?
   closingDate  DateTime?
   value        Float?
+  fileUrl      String?
+  fileName     String?
+  fileSize     Int?
   prefectureId String?
   createdBy    String
   createdAt    DateTime  @default(now())

@@ -69,7 +69,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, notified, total: pendingSigners.length });
   } catch (error) {
-    console.error("Erro ao notificar pendentes:", error);
+    console.error("Erro ao notificar pendentes: - route.ts:72", error);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }
