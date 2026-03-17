@@ -51,11 +51,16 @@ export async function PATCH(
     if (body.openingDate) updateData.openingDate = new Date(body.openingDate);
     if (body.closingDate) updateData.closingDate = new Date(body.closingDate);
     if (body.value) updateData.value = parseFloat(body.value);
+    if (body.fileSize) updateData.fileSize = parseInt(body.fileSize);
 
     const bid = await prisma.bid.update({
       where: { id: params.id },
       data: updateData,
-      include: { prefecture: true },
+      include: { 
+        prefecture: true,
+        creator: { select: { name: true } },
+        _count: { select: { documents: true } },
+      },
     });
 
     return NextResponse.json(bid);

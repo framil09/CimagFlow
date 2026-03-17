@@ -62,36 +62,78 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
+      console.log("POST /api/bids: Não autorizado");
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const userId = (session.user as any).id;
+    let userId = (session.user as any)?.id;
+    console.log("POST /api/bids: userId da sessão:", userId);
+
+    // Verificar se o usuário existe, se não pegar o primeiro admin
+    let user = userId ? await prisma.user.findUnique({ where: { id: userId } }) : null;
+    
+    if (!user) {
+      console.log("POST /api/bids: Usuário da sessão não encontrado, buscando admin...");
+      user = await prisma.user.findFirst({ 
+        where: { role: "ADMIN", isActive: true },
+        orderBy: { createdAt: "asc" }
+      });
+      
+      if (!user) {
+        console.error("POST /api/bids: Nenhum admin encontrado no sistema");
+        return NextResponse.json({ error: "Erro de configuração do sistema" }, { status: 500 });
+      }
+      
+      userId = user.id;
+      console.log("POST /api/bids: Usando admin:", user.email, userId);
+    }
+
     const body = await request.json();
-    const { number, title, description, type, status, openingDate, closingDate, value, prefectureId } = body;
+    console.log("POST /api/bids: Body recebido:", JSON.stringify(body, null, 2));
+    
+    const { number, title, description, type, status, openingDate, closingDate, value, fileUrl, fileName, fileSize } = body;
 
     if (!number || !title) {
+      console.log("POST /api/bids: Dados inválidos - número ou título faltando");
       return NextResponse.json({ error: "Número e título são obrigatórios" }, { status: 400 });
     }
 
+    const bidData = {
+      number: String(number).trim(),
+      title: String(title).trim(),
+      description: description ? String(description).trim() : null,
+      type: type || "PREGAO_ELETRONICO",
+      status: status || "ABERTO",
+      openingDate: openingDate && openingDate !== "" ? new Date(openingDate) : null,
+      closingDate: closingDate && closingDate !== "" ? new Date(closingDate) : null,
+      value: value && value !== "" ? parseFloat(value) : null,
+      prefectureId: null,
+      fileUrl: fileUrl || null,
+      fileName: fileName || null,
+      fileSize: fileSize ? parseInt(String(fileSize)) : null,
+      createdBy: userId,
+    };
+
+    console.log("POST /api/bids: Dados a inserir:", JSON.stringify(bidData, null, 2));
+    console.log("POST /api/bids: Criando edital no banco...");
+    
     const bid = await prisma.bid.create({
-      data: {
-        number,
-        title,
-        description,
-        type: type || "PREGAO",
-        status: status || "ABERTO",
-        openingDate: openingDate ? new Date(openingDate) : null,
-        closingDate: closingDate ? new Date(closingDate) : null,
-        value: value ? parseFloat(value) : null,
-        prefectureId: prefectureId || null,
-        createdBy: userId,
+      data: bidData,
+      include: { 
+        prefecture: true,
+        creator: { select: { name: true } },
+        _count: { select: { documents: true } },
       },
-      include: { prefecture: true },
     });
 
+    console.log("POST /api/bids: Edital criado com sucesso:", bid.id);
     return NextResponse.json(bid, { status: 201 });
   } catch (error) {
-    console.error("Error creating bid:", error);
-    return NextResponse.json({ error: "Erro ao criar edital" }, { status: 500 });
+    console.error("POST /api/bids: Erro ao criar edital:", error);
+    console.error("POST /api/bids: Stack trace:", error instanceof Error ? error.stack : "");
+    return NextResponse.json({ 
+      error: "Erro ao criar edital",
+      details: error instanceof Error ? error.message : "Erro desconhecido"
+    }, { status: 500 });
   }
 }

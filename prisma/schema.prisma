@@ -28,6 +28,7 @@ enum SignerStatus {
 enum SignerType {
   FORNECEDOR
   PREFEITO
+  PRESIDENTE
   JURIDICO
   TESTEMUNHA
   OUTRO
@@ -139,8 +140,8 @@ model Template {
   description String?
   content     String   @db.Text
   variables   String[] @default([])
-  headerImage String?
-  footerImage String?
+  headerImage String?  @db.Text
+  footerImage String?  @db.Text
   createdBy   String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -287,6 +288,9 @@ model Bid {
   openingDate  DateTime?
   closingDate  DateTime?
   value        Float?
+  fileUrl      String?
+  fileName     String?
+  fileSize     Int?
   prefectureId String?
   createdBy    String
   createdAt    DateTime  @default(now())
