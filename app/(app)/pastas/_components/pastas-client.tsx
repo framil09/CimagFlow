@@ -179,6 +179,7 @@ export default function PastasClient() {
               Adicionar Contrato
             </Link>
           )}
+        {!isGestor && (
           <button
             onClick={() => {
               setEditingFolder(null);
@@ -190,6 +191,7 @@ export default function PastasClient() {
             <FolderPlus className="w-5 h-5" />
             Nova Pasta
           </button>
+        )}
         </div>
       </div>
 
@@ -275,26 +277,27 @@ export default function PastasClient() {
                           </p>
                         </div>
                       </div>
-                      <div
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => openEditModal(folder)}
-                            className="p-1.5 hover:bg-gray-100 rounded-lg"
-                          >
-                            <Edit2 className="w-4 h-4 text-gray-500" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(folder.id)}
-                            className="p-1.5 hover:bg-red-100 rounded-lg"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </button>
+                    {!isGestor && (
+                        <div
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => openEditModal(folder)}
+                              className="p-1.5 hover:bg-gray-100 rounded-lg"
+                            >
+                              <Edit2 className="w-4 h-4 text-gray-500" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(folder.id)}
+                              className="p-1.5 hover:bg-red-100 rounded-lg"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    </div>
+                      )}
                   </motion.div>
                 ))}
               </div>
