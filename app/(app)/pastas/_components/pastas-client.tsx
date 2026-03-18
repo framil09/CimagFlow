@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
+import { useSession } from "next-auth/react";
 
 interface Folder {
   id: string;
@@ -38,6 +39,9 @@ interface Document {
 }
 
 export default function PastasClient() {
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role;
+  const isGestor = userRole === "GESTOR";
   const [folders, setFolders] = useState<Folder[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [prefectures, setPrefectures] = useState<any[]>([]);
