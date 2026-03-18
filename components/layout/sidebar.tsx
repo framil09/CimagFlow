@@ -60,9 +60,9 @@ export default function Sidebar({ userName, userRole, onCollapseChange }: Sideba
   const { data: session } = useSession() ?? {};
 
   const userPermissions: string[] = (session?.user as any)?.permissions ?? [];
-  const isAdmin = userRole === "ADMIN";
+  const isAdminOrGestor = userRole === "ADMIN" || userRole === "GESTOR";
 
-  const visibleNavItems = isAdmin
+  const visibleNavItems = isAdminOrGestor
     ? navItems
     : navItems.filter((item) => {
         const moduleKey = item.href.replace("/", "");
@@ -192,7 +192,7 @@ export default function Sidebar({ userName, userRole, onCollapseChange }: Sideba
             {!collapsed && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <p className="text-sm font-medium text-white truncate max-w-[140px]">{userName ?? "Usuário"}</p>
-                <p className="text-xs text-blue-300">{userRole === "ADMIN" ? "Administrador" : "Colaborador"}</p>
+               <p className="text-xs text-blue-300">{userRole === "ADMIN" ? "Administrador" : userRole === "GESTOR" ? "Gestor" : "Colaborador"}</p>
               </motion.div>
             )}
           </AnimatePresence>
