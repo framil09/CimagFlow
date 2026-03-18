@@ -134,7 +134,7 @@ export default function Sidebar({ userName, userRole, onCollapseChange }: Sideba
         })}
         
         {/* Admin Only Items */}
-        {userRole === "ADMIN" && (
+        {(userRole === "ADMIN" || userRole === "GESTOR") && (
           <>
             <div className="my-2 border-t border-white/10" />
             <AnimatePresence>
@@ -149,8 +149,11 @@ export default function Sidebar({ userName, userRole, onCollapseChange }: Sideba
                 </motion.p>
               )}
             </AnimatePresence>
-            {adminNavItems.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(item.href + "/");
+   {adminNavItems.map((item) => {
+        // Se for GESTOR, ele só pode ver o Analytics. Se for outro item, ignora.
+        if (userRole === "GESTOR" && item.label !== "Analytics") return null;
+
+        const active = pathname === item.href || pathname.startsWith(item.href + "/");
               return (
                 <Link
                   key={item.href}
