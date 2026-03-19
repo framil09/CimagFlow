@@ -53,7 +53,7 @@ export async function PATCH(
     });
 
     // Auditoria
-    const user = session.user as any;
+    const user = session?.user as any;
     await auditLog(request, {
       userId: user.id,
       userName: user.name || user.email,
@@ -91,7 +91,7 @@ export async function DELETE(
 
     // Auditoria
     if (company) {
-      const user = session.user as any;
+      const user = session?.user as any;
       await auditLog(request, {
         userId: user.id,
         userName: user.name || user.email,
