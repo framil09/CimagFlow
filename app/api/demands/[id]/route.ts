@@ -41,7 +41,7 @@ export async function GET(
     }
 
     return NextResponse.json(demand);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Erro ao buscar demanda: - route.ts:45", error);
     return NextResponse.json(
       { error: "Erro ao buscar demanda" },
@@ -89,7 +89,7 @@ export async function PATCH(
     }
 
     // Preparar dados de atualização
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
     if (priority !== undefined) updateData.priority = priority;
@@ -321,7 +321,7 @@ export async function PATCH(
     });
 
     return NextResponse.json(demand);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Erro ao atualizar demanda: - route.ts:325", error);
     return NextResponse.json(
       { error: "Erro ao atualizar demanda" },
@@ -376,7 +376,7 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Erro ao deletar demanda: - route.ts:380", error);
     return NextResponse.json(
       { error: "Erro ao deletar demanda" },

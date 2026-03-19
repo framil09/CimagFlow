@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 const PUBLIC_ROUTES = /^\/($|login|registro|assinar|nova-solicitacao|consulta-protocolo|responder-demanda|atas-publicas|api\/(auth|signup|sign|demands\/(public|protocol)|credenciamentos\/(public|protocol)|upload\/(presigned-public|direct-public)|prefectures|public))/;
 
 export default withAuth(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function middleware(req) {
     return NextResponse.next();
   },

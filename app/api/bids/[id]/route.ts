@@ -48,11 +48,31 @@ export async function PATCH(
 
     const body = await request.json();
 
-    const updateData: Record<string, unknown> = { ...body };
+    const allowedFields = [
+      "number", "title", "description", "type", "status",
+      "openingDate", "closingDate", "value", "prefectureId",
+      "fileUrl", "fileName", "fileSize",
+    ];
+    const updateData: Record<string, unknown> = {};
+    for (const key of allowedFields) {
+      if (key in body) {
+        updateData[key] = body[key] || null;
+      }
+    }
+    // Keep required string fields as strings (not null)
+    if (body.number) updateData.number = body.number;
+    if (body.title) updateData.title = body.title;
+    if (body.type) updateData.type = body.type;
+    if (body.status) updateData.status = body.status;
+    if (typeof body.description === "string") updateData.description = body.description || null;
+    // Convert types
     if (body.openingDate) updateData.openingDate = new Date(body.openingDate);
     if (body.closingDate) updateData.closingDate = new Date(body.closingDate);
     if (body.value) updateData.value = parseFloat(body.value);
     if (body.fileSize) updateData.fileSize = parseInt(body.fileSize);
+    // File fields: keep as string or null
+    if (typeof body.fileUrl === "string") updateData.fileUrl = body.fileUrl || null;
+    if (typeof body.fileName === "string") updateData.fileName = body.fileName || null;
 
     const bid = await prisma.bid.update({
       where: { id: params.id },

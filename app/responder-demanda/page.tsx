@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Send, CheckCircle2, FileText, Mail, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Send, CheckCircle2, FileText, Mail, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,8 +67,8 @@ function ResponderDemandaContent() {
 
       setSuccess(true);
       toast.success("Resposta enviada com sucesso!");
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao enviar resposta");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao enviar resposta");
     } finally {
       setLoading(false);
     }

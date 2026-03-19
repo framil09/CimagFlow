@@ -4,17 +4,9 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   FileText,
-  Search,
   Plus,
-  Edit2,
-  Trash2,
-  X,
-  Calendar,
-  DollarSign,
   Building2,
   Clock,
-  Upload,
-  FileCheck,
   Loader2,
   CheckCircle2,
   PenLine,
@@ -25,7 +17,6 @@ import {
   FileSignature,
   Gavel,
   TrendingUp,
-  TrendingDown,
   AlertTriangle,
   BarChart3,
   Activity,
@@ -162,7 +153,9 @@ function AnimNum({ target, decimals = 0, suffix = "" }: { target: number; decima
 }
 
 // ─── KPI Card ───
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function KpiCard({ label, value, icon: Icon, color, link, subtitle, delay = 0, growth }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   label: string; value: number; icon: any; color: string; link?: string; subtitle?: string; delay?: number; growth?: number;
 }) {
   const content = (
@@ -200,6 +193,7 @@ function KpiCard({ label, value, icon: Icon, color, link, subtitle, delay = 0, g
 }
 
 // ─── Section Header ───
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function SectionHeader({ title, icon: Icon }: { title: string; icon: any }) {
   return (
     <div className="flex items-center gap-2 mb-4">
@@ -230,7 +224,9 @@ function EmptyState({ text }: { text: string }) {
 }
 
 // ─── Stat Highlight Card ───
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function StatHighlight({ icon: Icon, label, value, suffix = "", color, description }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: any; label: string; value: number; suffix?: string; color: string; description?: string;
 }) {
   return (
@@ -251,6 +247,7 @@ function StatHighlight({ icon: Icon, label, value, suffix = "", color, descripti
 }
 
 // ─── Module Section Header ───
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ModuleSectionHeader({ title, description, icon: Icon }: { title: string; description?: string; icon: any }) {
   return (
     <motion.div 
@@ -316,6 +313,7 @@ function LazyAreaChartComponent({ data: areaData }: { data: { month: string; doc
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function LazyBarChartComponent({ data: barData, dataKey, name, fillColor, colorByItem }: { data: any[]; dataKey: string; name: string; fillColor?: string; colorByItem?: boolean }) {
   if (!rechartsModule) return <ChartPlaceholder />;
   const { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } = rechartsModule;

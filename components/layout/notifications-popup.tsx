@@ -8,7 +8,6 @@ import {
   Check,
   Eye,
   AlertCircle,
-  FileText,
   Users,
   Clock,
   CheckCircle2,
@@ -44,6 +43,7 @@ interface NotificationsPopupProps {
   position?: "sidebar" | "header";
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const NOTIFICATION_ICONS: Record<string, any> = {
   DOCUMENT_SIGNED: CheckCircle2,
   DOCUMENT_PENDING: Clock,

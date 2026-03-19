@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Loader2, Upload, X } from "lucide-react";
+import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +15,9 @@ import FileUpload from "@/components/file-upload";
 export default function NovaDemandaPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [prefectures, setPrefectures] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [users, setUsers] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
@@ -99,14 +101,14 @@ export default function NovaDemandaPage() {
       const demand = await res.json();
       toast.success(`Demanda criada com sucesso! Protocolo: ${demand.protocolNumber}`);
       router.push(`/demandas/${demand.id}`);
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao criar demanda");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Erro ao criar demanda");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: string | string[] | unknown) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 

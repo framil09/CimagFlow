@@ -4,7 +4,8 @@ import { authOptions } from "@/lib/auth-options";
 import prisma from "@/lib/db";
 
 // GET - Estatísticas das demandas
-export async function GET(req: NextRequest) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function GET(_req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -61,20 +62,20 @@ export async function GET(req: NextRequest) {
         CONCLUIDA: concluidas,
         CANCELADA: canceladas,
       },
-      byPriority: byPriority.reduce((acc: any, item: any) => {
+      byPriority: byPriority.reduce((acc: Record<string, number>, item: { priority: string; _count: number }) => {
         acc[item.priority] = item._count;
         return acc;
       }, {}),
       byPrefecture: await (async () => {
-        const prefIds = byPrefecture.map((p: any) => p.prefectureId).filter(Boolean);
+        const prefIds = byPrefecture.map((p: { prefectureId: string | null }) => p.prefectureId).filter(Boolean) as string[];
         const prefs = await prisma.prefecture.findMany({
           where: { id: { in: prefIds } },
           select: { id: true, name: true },
         });
         const prefMap = new Map(prefs.map(p => [p.id, p.name]));
-        return byPrefecture.map((item: any) => ({
+        return byPrefecture.map((item: { prefectureId: string | null; _count: number }) => ({
           prefectureId: item.prefectureId,
-          prefectureName: prefMap.get(item.prefectureId) || "Desconhecida",
+          prefectureName: prefMap.get(item.prefectureId ?? "") || "Desconhecida",
           count: item._count,
         }));
       })(),
@@ -84,7 +85,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(stats, {
       headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=60" },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Erro ao buscar estatísticas:", error);
     return NextResponse.json(
       { error: "Erro ao buscar estatísticas" },

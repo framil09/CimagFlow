@@ -7,6 +7,7 @@ import { sendEmail } from "@/lib/email";
 export const dynamic = "force-dynamic";
 
 // Helper para resolver o userId real do banco
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function resolveUserId(session: any): Promise<string | null> {
   const sessionId = session.user?.id;
   if (sessionId) {
@@ -112,6 +113,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       });
 
       if (demand) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const userName = (session.user as any).name || "Sistema";
 
         // Registrar no histórico da demanda

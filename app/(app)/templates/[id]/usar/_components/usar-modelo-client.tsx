@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -68,12 +69,19 @@ export default function UsarModeloClient({ templateId }: UsarModeloClientProps) 
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [template, setTemplate] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [prefectures, setPrefectures] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [companies, setCompanies] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [bids, setBids] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [folders, setFolders] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [signers, setSigners] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [demands, setDemands] = useState<any[]>([]);
 
   const [selectedPrefecture, setSelectedPrefecture] = useState("");
@@ -84,7 +92,8 @@ export default function UsarModeloClient({ templateId }: UsarModeloClientProps) 
   const [selectedDemand, setSelectedDemand] = useState("");
   const [variables, setVariables] = useState<Record<string, string>>({});
   const [title, setTitle] = useState("");
-  const [sendAfterCreate, setSendAfterCreate] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_sendAfterCreate, _setSendAfterCreate] = useState(false);
   const [showSigners, setShowSigners] = useState(false);
   const [preview, setPreview] = useState("");
 
@@ -126,8 +135,8 @@ export default function UsarModeloClient({ templateId }: UsarModeloClientProps) 
         });
         
         setVariables(initialVars);
-      } catch (e: any) {
-        toast.error(e.message || "Erro ao carregar modelo");
+      } catch (e: unknown) {
+        toast.error(e instanceof Error ? e.message : "Erro ao carregar modelo");
       } finally {
         setLoading(false);
       }
@@ -237,7 +246,7 @@ export default function UsarModeloClient({ templateId }: UsarModeloClientProps) 
     }
 
     // Verificar se há variáveis não preenchidas
-    const emptyVars = Object.entries(variables).filter(([_, v]) => !v);
+    const emptyVars = Object.entries(variables).filter(([, v]) => !v);
     if (emptyVars.length > 0 && !inlineEditing) {
       const confirm = window.confirm(`Há ${emptyVars.length} campo(s) não preenchido(s). Deseja continuar mesmo assim?`);
       if (!confirm) return;
@@ -272,8 +281,8 @@ export default function UsarModeloClient({ templateId }: UsarModeloClientProps) 
       
       toast.success(send ? "Documento criado e enviado para assinatura!" : "Documento salvo como rascunho!");
       router.push(`/documentos/${data.document.id}`);
-    } catch (e: any) {
-      toast.error(e.message || "Erro ao criar documento");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Erro ao criar documento");
     } finally {
       setSaving(false);
     }
@@ -493,6 +502,7 @@ export default function UsarModeloClient({ templateId }: UsarModeloClientProps) 
                 <select value={selectedDemand} onChange={e => setSelectedDemand(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 bg-white">
                   <option value="">Nenhuma demanda</option>
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {demands.map((d: any) => (
                     <option key={d.id} value={d.id}>
                       {d.protocolNumber} - {d.title} {d.requesterName ? `(${d.requesterName})` : ""}

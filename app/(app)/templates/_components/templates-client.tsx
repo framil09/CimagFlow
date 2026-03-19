@@ -1,14 +1,16 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileCode2, Plus, Search, Edit2, Trash2, X, Check, Loader2, Tag, Eye, FileText, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, AlignJustify, Type, Undo2, Redo2, List, ListOrdered, Minus, Maximize2, Minimize2, ImagePlus, Strikethrough, Subscript, Superscript, IndentIncrease, IndentDecrease, Quote, Link as LinkIcon, Unlink, RemoveFormatting, Highlighter, Palette } from "lucide-react";
+import { FileCode2, Plus, Search, Edit2, Trash2, X, Check, Loader2, Tag, Eye, FileText, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, AlignJustify, Type, Undo2, Redo2, List, ListOrdered, Minus, Maximize2, Minimize2, ImagePlus, Strikethrough, Subscript, Superscript, IndentIncrease, IndentDecrease, Link as LinkIcon, Unlink, RemoveFormatting, Highlighter, Palette } from "lucide-react";
 
 const HEADER_ACCEPT = "image/png,image/jpeg,image/jpg,image/webp";
 import Link from "next/link";
 import { useDebounce } from "@/hooks/use-debounce";
 
-const COMMON_VARS = [
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _COMMON_VARS = [
   // Data
   "data", "data_atual", "ano",
   // Prefeitura
@@ -24,11 +26,13 @@ const COMMON_VARS = [
 ];
 
 export default function TemplatesClient() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300);
   const [showModal, setShowModal] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [showPreview, setShowPreview] = useState<any>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", description: "", content: "", variables: [] as string[] });
@@ -79,6 +83,7 @@ export default function TemplatesClient() {
     setShowModal(true);
     setEditorVersion((v) => v + 1);
   };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const openEdit = (t: any) => {
     setForm({ name: t.name ?? "", description: t.description ?? "", content: t.content ?? "", variables: t.variables ?? [] });
     setEditId(t.id);
@@ -262,9 +267,9 @@ export default function TemplatesClient() {
     finally { setDeleting(null); }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const openPreview = (template: any) => {
     setShowPreview(template);
-    // Convert plain text newlines to HTML if content doesn't contain HTML tags
     const content = template.content || "";
     const isHtml = /<[a-z][\s\S]*>/i.test(content);
     setPreviewContent(isHtml ? content : content.replace(/\n/g, "<br>"));

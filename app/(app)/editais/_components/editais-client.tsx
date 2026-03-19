@@ -226,11 +226,15 @@ export default function EditaisClient() {
 
       const { uploadUrl, fileUrl } = await presignedRes.json();
 
-      await fetch(uploadUrl, {
+      const uploadRes = await fetch(uploadUrl, {
         method: "PUT",
         body: selectedFile,
         headers: { "Content-Type": selectedFile.type },
       });
+
+      if (!uploadRes.ok) {
+        throw new Error("Erro ao enviar arquivo para o armazenamento");
+      }
 
       return { fileUrl, fileName: selectedFile.name, fileSize: selectedFile.size };
     } catch (error) {
@@ -279,12 +283,12 @@ export default function EditaisClient() {
         description: formData.description?.trim() || "",
         type: formData.type,
         status: formData.status,
-        openingDate: formData.openingDate || "",
-        closingDate: formData.closingDate || "",
-        value: formData.value || "",
-        fileUrl: fileData.fileUrl || "",
-        fileName: fileData.fileName || "",
-        fileSize: fileData.fileSize || "",
+        openingDate: formData.openingDate || null,
+        closingDate: formData.closingDate || null,
+        value: formData.value || null,
+        fileUrl: fileData.fileUrl || null,
+        fileName: fileData.fileName || null,
+        fileSize: fileData.fileSize || null,
       };
 
       let response;

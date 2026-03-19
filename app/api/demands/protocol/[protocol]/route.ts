@@ -63,7 +63,7 @@ export async function GET(
       history: demand.history,
       documents: demand.documents,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Erro ao buscar protocolo:", error);
     return NextResponse.json(
       { error: "Erro ao buscar protocolo" },

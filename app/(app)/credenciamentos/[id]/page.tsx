@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -13,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft, Clock, User, Building2, FileText, CheckCircle2, XCircle,
   Calendar, Phone, Mail, Hash, Download, Save, AlertCircle, RefreshCw,
-  Briefcase, MapPin, Building, FileCheck, Loader2, Edit3, MessageSquare, Send
+  MapPin, Building, FileCheck, Loader2, Edit3, MessageSquare, Send
 } from "lucide-react";
 import FileUpload from "@/components/file-upload";
 import { toast } from "sonner";
@@ -157,8 +158,8 @@ export default function CredenciamentoDetalhesPage() {
       
       // Recarregar histórico
       fetchCredenciamento();
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao processar documento");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao processar documento");
     } finally {
       setApprovingDoc(null);
     }
@@ -171,6 +172,7 @@ export default function CredenciamentoDetalhesPage() {
       fetchMessages();
       fetchDocuments();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [credId, fetchCredenciamento]);
 
   const handleUpdate = async () => {
@@ -1117,7 +1119,7 @@ export default function CredenciamentoDetalhesPage() {
                         )}
                         {item.comment && (
                           <p className="text-sm text-muted-foreground mt-1 italic">
-                            "{item.comment}"
+                            &ldquo;{item.comment}&rdquo;
                           </p>
                         )}
                       </div>

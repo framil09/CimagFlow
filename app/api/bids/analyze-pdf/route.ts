@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     let pdfText = "";
     try {
       const { PDFParse } = await import("pdf-parse");
-      const buffer = Buffer.from(await file.arrayBuffer());
+      const buffer = Buffer.from(await file.arrayBuffer()) as unknown as Uint8Array;
       const parser = new PDFParse({ data: buffer });
       const result = await parser.getText();
       pdfText = result.text?.substring(0, 5000) || "";
