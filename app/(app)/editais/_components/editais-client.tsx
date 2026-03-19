@@ -178,15 +178,24 @@ export default function EditaisClient() {
       if (response.ok) {
         const suggestions = await response.json();
 
-        setFormData(prev => ({
-          ...prev,
-          number: prev.number || suggestions.number || "",
-          title: prev.title || suggestions.title || "",
-          description: prev.description || suggestions.description || "",
-          type: prev.type === "PREGAO_ELETRONICO" ? suggestions.type : prev.type,
-        }));
+        const filled: string[] = [];
+        setFormData(prev => {
+          const updated = { ...prev };
+          if (!prev.number && suggestions.number) { updated.number = suggestions.number; filled.push("Número"); }
+          if (!prev.title && suggestions.title) { updated.title = suggestions.title; filled.push("Título"); }
+          if (!prev.description && suggestions.description) { updated.description = suggestions.description; filled.push("Descrição"); }
+          if (prev.type === "PREGAO_ELETRONICO" && suggestions.type) { updated.type = suggestions.type; filled.push("Modalidade"); }
+          if (!prev.openingDate && suggestions.openingDate) { updated.openingDate = suggestions.openingDate; filled.push("Data Abertura"); }
+          if (!prev.closingDate && suggestions.closingDate) { updated.closingDate = suggestions.closingDate; filled.push("Data Encerramento"); }
+          if (!prev.value && suggestions.value) { updated.value = suggestions.value; filled.push("Valor"); }
+          return updated;
+        });
 
-        toast.success("PDF analisado! Campos preenchidos automaticamente.");
+        if (filled.length > 0) {
+          toast.success(`PDF analisado! Preenchido: ${filled.join(", ")}`);
+        } else {
+          toast.success("PDF analisado! Nenhum campo novo extraído.");
+        }
       }
     } catch (error) {
       console.error("Erro ao analisar PDF:", error);
@@ -339,8 +348,8 @@ export default function EditaisClient() {
       fileSize: bid.fileSize?.toString() || "",
     });
     setSelectedFile(null);
-    setShowModal(true);
     setPreviewUrl(bid.fileUrl || null);
+    setShowModal(true);
   };
 
   const resetForm = () => {
@@ -572,7 +581,7 @@ export default function EditaisClient() {
                 {/* PDF Upload Section */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Anexar PDF do Edital</label>
-                  {!selectedFile ? (
+                  {!selectedFile && !formData.fileUrl ? (
                     <div className="relative">
                       <input
                         type="file"
@@ -584,53 +593,80 @@ export default function EditaisClient() {
                       />
                       <label
                         htmlFor="pdf-upload"
-                        className="flex flex-col items-center justify-center w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-colors"
+                        className="flex flex-col items-center justify-center w-full px-4 py-8 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-colors"
                       >
-                        <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                        <span className="text-sm text-gray-600">Clique para selecionar um PDF</span>
-                        <span className="text-xs text-gray-400 mt-1">Máximo 10MB</span>
+                        <Upload className="w-10 h-10 text-gray-400 mb-2" />
+                        <span className="text-sm font-medium text-gray-600">Clique para selecionar um PDF</span>
+                        <span className="text-xs text-gray-400 mt-1">O arquivo será analisado automaticamente para preencher os campos</span>
+                        <span className="text-xs text-gray-400">Máximo 10MB</span>
                       </label>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-3 p-4 border border-gray-200 rounded-xl bg-gray-50">
-                      {analyzingPdf ? (
-                        <>
-                          <Loader2 className="w-5 h-5 text-emerald-500 animate-spin flex-shrink-0" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-700">Analisando arquivo...</p>
-                            <p className="text-xs text-gray-500">{selectedFile.name}</p>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl bg-gray-50">
+                        {analyzingPdf ? (
+                          <>
+                            <Loader2 className="w-5 h-5 text-emerald-500 animate-spin flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-700">Analisando PDF e preenchendo campos...</p>
+                              <p className="text-xs text-gray-500">{selectedFile?.name || formData.fileName}</p>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <FileCheck className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-700">{selectedFile?.name || formData.fileName}</p>
+                              {selectedFile && (
+                                <p className="text-xs text-gray-500">
+                                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setShowPreview(true)}
+                              className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 flex items-center gap-1"
+                              title="Visualizar PDF"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> Ver PDF
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedFile(null);
+                                if (previewUrl && !formData.fileUrl) URL.revokeObjectURL(previewUrl);
+                                setPreviewUrl(null);
+                                setShowPreview(false);
+                                setFormData(prev => ({ ...prev, fileUrl: "", fileName: "", fileSize: "" }));
+                              }}
+                              className="p-1 hover:bg-gray-200 rounded"
+                            >
+                              <X className="w-4 h-4 text-gray-500" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Inline PDF preview */}
+                      {!analyzingPdf && (previewUrl || formData.fileUrl) && (
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-xs text-gray-500">Pré-visualização</p>
+                            <button
+                              type="button"
+                              onClick={() => setShowPreview(true)}
+                              className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                            >
+                              <Eye className="w-3 h-3" /> Tela cheia
+                            </button>
                           </div>
-                        </>
-                      ) : (
-                        <>
-                          <FileCheck className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-700">{selectedFile.name}</p>
-                            <p className="text-xs text-gray-500">
-                              {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setShowPreview(true)}
-                            className="p-1.5 hover:bg-blue-100 rounded text-blue-600"
-                            title="Visualizar PDF"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedFile(null);
-                              if (previewUrl) URL.revokeObjectURL(previewUrl);
-                              setPreviewUrl(null);
-                              setShowPreview(false);
-                            }}
-                            className="p-1 hover:bg-gray-200 rounded"
-                          >
-                            <X className="w-4 h-4 text-gray-500" />
-                          </button>
-                        </>
+                          <iframe
+                            src={previewUrl || formData.fileUrl || undefined}
+                            className="w-full h-72 border border-gray-200 rounded-xl bg-gray-50"
+                            title="Pré-visualização do PDF"
+                          />
+                        </div>
                       )}
                     </div>
                   )}
@@ -659,30 +695,9 @@ export default function EditaisClient() {
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50">Cancelar</button>
                   <button type="submit" disabled={uploadingFile || analyzingPdf} className="flex-1 px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 disabled:opacity-50">
-                    {uploadingFile ? "Enviando..." : "Salvar"}
+                    {uploadingFile ? "Enviando..." : analyzingPdf ? "Analisando..." : "Salvar"}
                   </button>
                 </div>
-
-                {/* Inline PDF preview */}
-                {(previewUrl || formData.fileUrl) && (
-                  <div className="mt-2">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium text-gray-700">Pré-visualização do Edital</p>
-                      <button
-                        type="button"
-                        onClick={() => setShowPreview(true)}
-                        className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-                      >
-                        <Eye className="w-3 h-3" /> Tela cheia
-                      </button>
-                    </div>
-                    <iframe
-                      src={previewUrl || formData.fileUrl}
-                      className="w-full h-64 border border-gray-200 rounded-xl"
-                      title="Pré-visualização do PDF"
-                    />
-                  </div>
-                )}
               </form>
             </motion.div>
           </motion.div>
@@ -703,11 +718,11 @@ export default function EditaisClient() {
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
-              className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-2xl w-full max-w-6xl max-h-[92vh] overflow-hidden flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between p-5 border-b border-gray-200 flex-shrink-0">
                 <div>
                   <div className="flex items-center gap-3 mb-1">
                     <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-sm font-mono">{viewingBid.number}</span>
@@ -719,57 +734,107 @@ export default function EditaisClient() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => { setViewingBid(null); openEditModal(viewingBid); }}
-                    className="p-2 hover:bg-gray-100 rounded-lg" title="Editar"
+                    className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center gap-1" title="Editar"
                   >
-                    <Edit2 className="w-5 h-5 text-gray-500" />
+                    <Edit2 className="w-4 h-4 text-gray-600" /> Editar
                   </button>
+                  {viewingBid.fileUrl && (
+                    <a
+                      href={viewingBid.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 text-sm bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg flex items-center gap-1"
+                    >
+                      <Download className="w-4 h-4" /> Baixar PDF
+                    </a>
+                  )}
                   <button onClick={() => setViewingBid(null)} className="p-2 hover:bg-gray-100 rounded-lg">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
-              {/* Info */}
-              <div className="p-6 space-y-4">
-                {viewingBid.description && (
-                  <p className="text-gray-600">{viewingBid.description}</p>
-                )}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  {viewingBid.prefecture && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Building2 className="w-4 h-4 text-gray-400" />
-                      <span>{viewingBid.prefecture.name}</span>
+              {/* Content: side-by-side on desktop */}
+              <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
+                {/* Left: Info panel */}
+                <div className="lg:w-[340px] flex-shrink-0 overflow-y-auto p-5 border-b lg:border-b-0 lg:border-r border-gray-200">
+                  {viewingBid.description && (
+                    <div className="mb-5">
+                      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Descrição</h3>
+                      <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{viewingBid.description}</p>
                     </div>
                   )}
-                  {viewingBid.value && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <DollarSign className="w-4 h-4 text-gray-400" />
-                      <span>{formatCurrency(viewingBid.value)}</span>
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Informações</h3>
+                    {viewingBid.prefecture && (
+                      <div className="flex items-start gap-2.5 text-sm">
+                        <Building2 className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-400">Prefeitura</p>
+                          <p className="text-gray-700">{viewingBid.prefecture.name}</p>
+                        </div>
+                      </div>
+                    )}
+                    {viewingBid.value && (
+                      <div className="flex items-start gap-2.5 text-sm">
+                        <DollarSign className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-400">Valor Estimado</p>
+                          <p className="text-gray-700 font-medium">{formatCurrency(viewingBid.value)}</p>
+                        </div>
+                      </div>
+                    )}
+                    {viewingBid.openingDate && (
+                      <div className="flex items-start gap-2.5 text-sm">
+                        <Calendar className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-400">Abertura</p>
+                          <p className="text-gray-700">{format(new Date(viewingBid.openingDate), "dd/MM/yyyy", { locale: ptBR })}</p>
+                        </div>
+                      </div>
+                    )}
+                    {viewingBid.closingDate && (
+                      <div className="flex items-start gap-2.5 text-sm">
+                        <Clock className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-gray-400">Encerramento</p>
+                          <p className="text-gray-700">{format(new Date(viewingBid.closingDate), "dd/MM/yyyy", { locale: ptBR })}</p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-start gap-2.5 text-sm">
+                      <FileText className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-gray-400">Documentos Vinculados</p>
+                        <p className="text-gray-700">{viewingBid._count.documents}</p>
+                      </div>
                     </div>
-                  )}
-                  {viewingBid.openingDate && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Calendar className="w-4 h-4 text-gray-400" />
-                      <span>Abertura: {format(new Date(viewingBid.openingDate), "dd/MM/yyyy", { locale: ptBR })}</span>
+                    <div className="flex items-start gap-2.5 text-sm">
+                      <FileText className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-gray-400">Criado por</p>
+                        <p className="text-gray-700">{viewingBid.creator?.name || "—"}</p>
+                      </div>
                     </div>
-                  )}
-                  {viewingBid.closingDate && (
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Clock className="w-4 h-4 text-gray-400" />
-                      <span>Encerramento: {format(new Date(viewingBid.closingDate), "dd/MM/yyyy", { locale: ptBR })}</span>
+                    <div className="flex items-start gap-2.5 text-sm">
+                      <Calendar className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-gray-400">Cadastrado em</p>
+                        <p className="text-gray-700">{format(new Date(viewingBid.createdAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
 
-                {/* Document Viewer */}
-                {viewingBid.fileUrl ? (
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Paperclip className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm font-medium text-gray-700">{viewingBid.fileName || "Documento do Edital"}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
+                {/* Right: PDF Viewer */}
+                <div className="flex-1 flex flex-col min-h-0">
+                  {viewingBid.fileUrl ? (
+                    <>
+                      <div className="flex items-center justify-between px-5 py-2.5 bg-gray-50 border-b border-gray-200 flex-shrink-0">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Paperclip className="w-4 h-4" />
+                          <span className="font-medium">{viewingBid.fileName || "Documento do Edital"}</span>
+                        </div>
                         <button
                           onClick={() => {
                             setPreviewUrl(viewingBid.fileUrl);
@@ -780,34 +845,27 @@ export default function EditaisClient() {
                         >
                           <Eye className="w-3 h-3" /> Tela cheia
                         </button>
-                        <a
-                          href={viewingBid.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-emerald-600 hover:underline flex items-center gap-1"
-                        >
-                          <Download className="w-3 h-3" /> Baixar
-                        </a>
                       </div>
+                      <iframe
+                        src={viewingBid.fileUrl}
+                        className="flex-1 w-full bg-white min-h-[400px]"
+                        title="Documento do Edital"
+                      />
+                    </>
+                  ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center py-12 text-gray-400">
+                      <FileText className="w-16 h-16 mb-4" />
+                      <p className="text-base font-medium mb-1">Nenhum documento anexado</p>
+                      <p className="text-sm mb-4">Este edital ainda não possui um PDF anexado</p>
+                      <button
+                        onClick={() => { setViewingBid(null); openEditModal(viewingBid); }}
+                        className="px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 flex items-center gap-2 text-sm"
+                      >
+                        <Upload className="w-4 h-4" /> Anexar documento
+                      </button>
                     </div>
-                    <iframe
-                      src={viewingBid.fileUrl}
-                      className="w-full h-[500px] border border-gray-200 rounded-xl bg-gray-50"
-                      title="Documento do Edital"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
-                    <FileText className="w-12 h-12 mb-3" />
-                    <p className="text-sm">Nenhum documento anexado a este edital</p>
-                    <button
-                      onClick={() => { setViewingBid(null); openEditModal(viewingBid); }}
-                      className="mt-3 text-sm text-emerald-600 hover:underline flex items-center gap-1"
-                    >
-                      <Upload className="w-4 h-4" /> Anexar documento
-                    </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </motion.div>
           </motion.div>

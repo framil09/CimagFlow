@@ -52,6 +52,9 @@ function analyzeContent(text: string, fileName: string): {
   title: string;
   description: string;
   type: string;
+  openingDate: string;
+  closingDate: string;
+  value: string;
 } {
   const normalized = text.replace(/\s+/g, " ");
 
@@ -125,6 +128,55 @@ function analyzeContent(text: string, fileName: string): {
     }
   }
 
+  // Extract dates
+  let openingDate = "";
+  let closingDate = "";
+  const datePatterns = [
+    /(?:data\s*(?:de\s*)?abertura|sessão\s*(?:pública|publica)|abertura\s*(?:das\s*propostas|dos\s*envelopes))\s*[:\-–]?\s*(\d{1,2})[\s\/\-\.](\d{1,2})[\s\/\-\.](\d{2,4})/i,
+    /(?:dia|data)\s*(\d{1,2})[\s\/\-\.](\d{1,2})[\s\/\-\.](\d{2,4})\s*(?:,?\s*(?:às|as)\s*\d{1,2}[h:]\d{0,2})?\s*(?:,?\s*(?:para|na|no)\s*(?:abertura|sessão|sessao))/i,
+  ];
+  for (const pattern of datePatterns) {
+    const match = normalized.match(pattern);
+    if (match) {
+      const day = match[1].padStart(2, "0");
+      const month = match[2].padStart(2, "0");
+      let year = match[3];
+      if (year.length === 2) year = "20" + year;
+      openingDate = `${year}-${month}-${day}`;
+      break;
+    }
+  }
+
+  const closingPatterns = [
+    /(?:data\s*(?:de\s*)?(?:encerramento|fechamento|término|termino|fim)|(?:encerramento|recebimento)\s*(?:das\s*propostas|dos\s*envelopes))\s*[:\-–]?\s*(\d{1,2})[\s\/\-\.](\d{1,2})[\s\/\-\.](\d{2,4})/i,
+    /(?:até|ate)\s*(?:o\s*dia|a\s*data\s*de?)\s*(\d{1,2})[\s\/\-\.](\d{1,2})[\s\/\-\.](\d{2,4})/i,
+  ];
+  for (const pattern of closingPatterns) {
+    const match = normalized.match(pattern);
+    if (match) {
+      const day = match[1].padStart(2, "0");
+      const month = match[2].padStart(2, "0");
+      let year = match[3];
+      if (year.length === 2) year = "20" + year;
+      closingDate = `${year}-${month}-${day}`;
+      break;
+    }
+  }
+
+  // Extract estimated value
+  let value = "";
+  const valuePatterns = [
+    /(?:valor\s*(?:global|total|estimado|máximo|maximo|de\s*referência|de\s*referencia))\s*[:\-–]?\s*(?:R\$\s*)?([\d\.]+,\d{2})/i,
+    /R\$\s*([\d\.]+,\d{2})\s*\(.*?(?:reais|mil|milhão|milhões|milh[oõ]es)/i,
+  ];
+  for (const pattern of valuePatterns) {
+    const match = normalized.match(pattern);
+    if (match) {
+      value = match[1].replace(/\./g, "").replace(",", ".");
+      break;
+    }
+  }
+
   // Fallback to file name if content doesn't yield results
   if (!number) {
     const fallback = analyzeFileName(fileName);
@@ -134,7 +186,7 @@ function analyzeContent(text: string, fileName: string): {
     title = fileName.replace(/\.(pdf|PDF)$/, "").replace(/[_-]/g, " ");
   }
 
-  return { number, title, description, type };
+  return { number, title, description, type, openingDate, closingDate, value };
 }
 
 function analyzeFileName(fileName: string): {
@@ -142,6 +194,9 @@ function analyzeFileName(fileName: string): {
   title: string;
   description: string;
   type: string;
+  openingDate: string;
+  closingDate: string;
+  value: string;
 } {
   const nameWithoutExt = fileName.replace(/\.(pdf|PDF)$/, "");
 
@@ -171,5 +226,5 @@ function analyzeFileName(fileName: string): {
 
   const title = nameWithoutExt.replace(/[_-]/g, " ").replace(/\s+/g, " ").trim();
 
-  return { number, title, description: "", type };
+  return { number, title, description: "", type, openingDate: "", closingDate: "", value: "" };
 }
