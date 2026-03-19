@@ -18,9 +18,9 @@ export async function GET(
 
     const company = await prisma.company.findUnique({
       where: { id: params.id },
-      include: { 
+      include: {
         signers: true,
-        bid: { select: { id: true, title: true, number: true } }
+        bid: { select: { id: true, title: true, number: true } },
       },
     });
 
@@ -52,19 +52,16 @@ export async function PATCH(
       data: body,
     });
 
-    // Auditoria
-    const user = session?.user as any;
-    if (user) {
-      await auditLog(request, {
-        userId: user.id,
-        userName: user.name || user.email,
-        action: "UPDATE",
-        entity: "company",
-        entityId: company.id,
-        entityName: company.name,
-        details: `Empresa atualizada: ${company.name}`,
-      });
-    }
+    const user = session.user as any;
+    await auditLog(request, {
+      userId: user.id,
+      userName: user.name || user.email,
+      action: "UPDATE",
+      entity: "company",
+      entityId: company.id,
+      entityName: company.name,
+      details: `Empresa atualizada: ${company.name}`,
+    });
 
     return NextResponse.json(company);
   } catch (error) {
@@ -91,9 +88,8 @@ export async function DELETE(
 
     await prisma.company.delete({ where: { id: params.id } });
 
-    // Auditoria
-    if (company && session) {
-      const user = session!.user as any;
+    if (company) {
+      const user = session.user as any;
       await auditLog(request, {
         userId: user.id,
         userName: user.name || user.email,

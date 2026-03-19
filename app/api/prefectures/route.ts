@@ -14,7 +14,6 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "100");
     const isPublicRequest = !searchParams.has("page") && !searchParams.has("search");
 
-    // Para requisições públicas (sem parâmetros), não requer autenticação
     if (!isPublicRequest) {
       const session = await getServerSession(authOptions);
       if (!(session?.user as any)?.id) {
@@ -32,21 +31,14 @@ export async function GET(request: NextRequest) {
         }
       : {};
 
-    // Para requisições públicas, retorna lista simples sem paginação
     if (isPublicRequest) {
       const prefectures = await prisma.prefecture.findMany({
         orderBy: { name: "asc" },
-        select: {
-          id: true,
-          name: true,
-          city: true,
-          state: true,
-        },
+        select: { id: true, name: true, city: true, state: true },
       });
       return NextResponse.json(prefectures);
     }
 
-    // Para requisições autenticadas, retorna com paginação e contadores
     const [prefectures, total] = await Promise.all([
       prisma.prefecture.findMany({
         where,
@@ -83,8 +75,7 @@ export async function POST(request: NextRequest) {
       data: { name, city, state, cnpj, address, phone, email, mayorName },
     });
 
-    // Auditoria
-    const user = session!.user as any;
+    const user = session.user as any;
     await auditLog(request, {
       userId: user.id,
       userName: user.name || user.email,

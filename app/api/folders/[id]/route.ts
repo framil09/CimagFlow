@@ -57,7 +57,7 @@ export async function PATCH(
       data: updateData,
     });
 
-    const user = session!.user as any;
+    const user = session.user as any;
     await auditLog(request, {
       userId: user.id,
       userName: user.name || user.email,
@@ -90,7 +90,6 @@ export async function DELETE(
       return NextResponse.json({ error: "Gestor não pode excluir pastas" }, { status: 403 });
     }
 
-    // Buscar pasta antes de deletar para audit log
     const folder = await prisma.folder.findUnique({
       where: { id: params.id },
     });
@@ -98,7 +97,7 @@ export async function DELETE(
     await prisma.folder.delete({ where: { id: params.id } });
 
     if (folder) {
-      const user = session!.user as any;
+      const user = session.user as any;
       await auditLog(request, {
         userId: user.id,
         userName: user.name || user.email,

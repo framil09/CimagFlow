@@ -38,12 +38,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     const body = await req.json();
     const { title, description, content, status, deadline, message, reminderDays, folderId } = body;
+
     const doc = await prisma.document.update({
       where: { id: params.id },
       data: { title, description, content, status, deadline, message, reminderDays, folderId },
     });
 
-    const user = session!.user as any;
+    const user = session.user as any;
     await auditLog(req as any, {
       userId: user.id,
       userName: user.name || user.email,
@@ -66,7 +67,6 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     const session = await getServerSession(authOptions);
     if (!session) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
-    // Buscar documento antes de deletar para audit log
     const doc = await prisma.document.findUnique({
       where: { id: params.id },
     });
@@ -74,7 +74,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     await prisma.document.delete({ where: { id: params.id } });
 
     if (doc) {
-      const user = session!.user as any;
+      const user = session.user as any;
       await auditLog(req as any, {
         userId: user.id,
         userName: user.name || user.email,

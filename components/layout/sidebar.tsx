@@ -143,7 +143,7 @@ export default function Sidebar({ userName, userRole, onCollapseChange }: Sideba
         })}
         
         {/* Admin / Gestor Items */}
-        {(userRole === "ADMIN" || userRole === "GESTOR") && visibleAdminItems.length > 0 && (
+        {(isAdmin || isGestor) && visibleAdminItems.length > 0 && (
           <>
             <div className="my-2 border-t border-white/10" />
             <AnimatePresence>

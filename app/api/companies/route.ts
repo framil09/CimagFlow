@@ -34,9 +34,9 @@ export async function GET(request: NextRequest) {
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { name: "asc" },
-        include: { 
+        include: {
           _count: { select: { signers: true } },
-          bid: { select: { id: true, title: true, number: true } }
+          bid: { select: { id: true, title: true, number: true } },
         },
       }),
       prisma.company.count({ where }),
@@ -64,15 +64,15 @@ export async function POST(request: NextRequest) {
     }
 
     const company = await prisma.company.create({
-      data: { 
-        name, 
-        tradeName, 
-        cnpj, 
-        address, 
-        city, 
-        state, 
-        phone, 
-        email, 
+      data: {
+        name,
+        tradeName,
+        cnpj,
+        address,
+        city,
+        state,
+        phone,
+        email,
         contactName,
         cep,
         number,
@@ -82,8 +82,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Auditoria
-    const user = session!.user as any;
+    const user = session.user as any;
     await auditLog(request, {
       userId: user.id,
       userName: user.name || user.email,
@@ -91,7 +90,7 @@ export async function POST(request: NextRequest) {
       entity: "company",
       entityId: company.id,
       entityName: company.name,
-      details: `Empresa criada: ${company.name}${cnpj ? ` (CNPJ: ${cnpj})` : ''}`,
+      details: `Empresa criada: ${company.name}${cnpj ? ` (CNPJ: ${cnpj})` : ""}`,
     });
 
     return NextResponse.json(company, { status: 201 });

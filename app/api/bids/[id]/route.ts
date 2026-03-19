@@ -57,26 +57,23 @@ export async function PATCH(
     const bid = await prisma.bid.update({
       where: { id: params.id },
       data: updateData,
-      include: { 
+      include: {
         prefecture: true,
         creator: { select: { name: true } },
         _count: { select: { documents: true } },
       },
     });
 
-    // Auditoria
-    if (session?.user) {
-      const user = session!.user as any;
-      await auditLog(request, {
-        userId: user.id,
-        userName: user.name || user.email,
-        action: "UPDATE",
-        entity: "bid",
-        entityId: bid.id,
-        entityName: bid.number + " - " + bid.title,
-        details: `Edital atualizado: ${bid.number} - ${bid.title}`,
-      });
-    }
+    const user = session.user as any;
+    await auditLog(request, {
+      userId: user.id,
+      userName: user.name || user.email,
+      action: "UPDATE",
+      entity: "bid",
+      entityId: bid.id,
+      entityName: bid.number + " - " + bid.title,
+      details: `Edital atualizado: ${bid.number} - ${bid.title}`,
+    });
 
     return NextResponse.json(bid);
   } catch (error) {
@@ -103,9 +100,8 @@ export async function DELETE(
 
     await prisma.bid.delete({ where: { id: params.id } });
 
-    // Auditoria
-    if (bid && session) {
-      const user = session!.user as any;
+    if (bid) {
+      const user = session.user as any;
       await auditLog(request, {
         userId: user.id,
         userName: user.name || user.email,
