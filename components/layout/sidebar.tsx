@@ -58,6 +58,7 @@ interface SidebarProps {
 
 export default function Sidebar({ userName, userRole, onCollapseChange }: SidebarProps) {
   const pathname = usePathname();
+  const safePathname = pathname ?? "";
   const [collapsed, setCollapsed] = useState(false);
   const { data: session } = useSession() ?? {};
 
@@ -114,7 +115,7 @@ export default function Sidebar({ userName, userRole, onCollapseChange }: Sideba
       {/* Nav */}
       <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto sidebar-scroll">
         {visibleNavItems.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          const active = safePathname === item.href || safePathname.startsWith(item.href + "/");
           return (
             <Link
               key={item.href}
@@ -159,7 +160,7 @@ export default function Sidebar({ userName, userRole, onCollapseChange }: Sideba
               )}
             </AnimatePresence>
             {visibleAdminItems.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(item.href + "/");
+              const active = safePathname === item.href || safePathname.startsWith(item.href + "/");
               return (
                 <Link
                   key={item.href}

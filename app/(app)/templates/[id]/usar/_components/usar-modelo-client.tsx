@@ -270,6 +270,7 @@ export default function UsarModeloClient({ templateId }: UsarModeloClientProps) 
           variables: inlineEditing ? {} : finalVariables,
           customContent,
           folderId: selectedFolder || null,
+          prefectureId: selectedPrefecture || null,
           signerIds: selectedSigners,
           sendAfterCreate: send,
           demandId: selectedDemand || null,
@@ -486,6 +487,12 @@ export default function UsarModeloClient({ templateId }: UsarModeloClientProps) 
                   <p className="text-[10px] text-amber-600 mt-1.5 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" /> Nenhuma pasta para esta prefeitura
                                       <AlertCircle className="w-3 h-3" /> Nenhuma pasta para esta prefeitura
+                  </p>
+                )}
+                {selectedPrefecture && !selectedFolder && (
+                  <p className="text-[10px] text-blue-600 mt-1.5 flex items-center gap-1">
+                    <Check className="w-3 h-3" />
+                    O contrato será vinculado automaticamente na pasta do município
                   </p>
                 )}
               </div>

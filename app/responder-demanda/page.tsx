@@ -15,8 +15,8 @@ import FileUpload from "@/components/file-upload";
 
 function ResponderDemandaContent() {
   const searchParams = useSearchParams();
-  const initialProtocol = searchParams.get("protocolo") || "";
-  const initialEmail = searchParams.get("email") || "";
+  const initialProtocol = searchParams?.get("protocolo") || "";
+  const initialEmail = searchParams?.get("email") || "";
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);

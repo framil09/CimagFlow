@@ -6,6 +6,55 @@ import { sendEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 
+async function resolveFolderForPrefecture(params: {
+  userId: string;
+  selectedFolderId?: string | null;
+  prefectureId?: string | null;
+}) {
+  const { userId, selectedFolderId, prefectureId } = params;
+
+  if (selectedFolderId) {
+    const selectedFolder = await prisma.folder.findFirst({
+      where: { id: selectedFolderId, createdBy: userId },
+      select: { id: true },
+    });
+    return selectedFolder?.id || null;
+  }
+
+  if (!prefectureId) return null;
+
+  const existingFolder = await prisma.folder.findFirst({
+    where: {
+      createdBy: userId,
+      prefectureId,
+      parentId: null,
+    },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+
+  if (existingFolder) return existingFolder.id;
+
+  const prefecture = await prisma.prefecture.findUnique({
+    where: { id: prefectureId },
+    select: { name: true, city: true, state: true },
+  });
+
+  if (!prefecture) return null;
+
+  const createdFolder = await prisma.folder.create({
+    data: {
+      name: `Contratos - ${prefecture.city}`,
+      description: `Pasta automática para contratos do município ${prefecture.name} (${prefecture.city}/${prefecture.state}).`,
+      prefectureId,
+      createdBy: userId,
+    },
+    select: { id: true },
+  });
+
+  return createdFolder.id;
+}
+
 // Helper para resolver o userId real do banco
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function resolveUserId(session: any): Promise<string | null> {
@@ -68,7 +117,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     if (!userId) return NextResponse.json({ error: "Sessão inválida. Faça logout e login novamente." }, { status: 401 });
 
     const body = await req.json();
-    const { title, variables, customContent, folderId, signerIds, sendAfterCreate, demandId } = body;
+    const { title, variables, customContent, folderId, signerIds, sendAfterCreate, demandId, prefectureId } = body;
 
     const template = await prisma.template.findUnique({ where: { id: params.id } });
     if (!template) return NextResponse.json({ error: "Template não encontrado" }, { status: 404 });
@@ -84,6 +133,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       }
     }
 
+    const resolvedFolderId = await resolveFolderForPrefecture({
+      userId,
+      selectedFolderId: folderId,
+      prefectureId,
+    });
+
     // Criar documento
     const doc = await prisma.document.create({
       data: {
@@ -92,7 +147,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         content,
         status: "RASCUNHO",
         createdBy: userId,
-        folderId: folderId || null,
+        folderId: resolvedFolderId,
         templateId: params.id,
         demandId: demandId || null,
         signers: signerIds?.length ? {

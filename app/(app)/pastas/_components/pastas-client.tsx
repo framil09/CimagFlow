@@ -17,6 +17,7 @@ import {
   Landmark,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { toast } from "react-hot-toast";
 import { useSession } from "next-auth/react";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -166,12 +167,44 @@ export default function PastasClient() {
     CANCELADO: "bg-red-100 text-red-700",
   };
 
+  const municipalityFolders = folders.filter((folder) => !!folder.prefectureId).length;
+
   return (
     <div className="p-6">
+      <div className="mb-6 rounded-2xl border border-[#1E3A5F]/15 bg-gradient-to-r from-[#1E3A5F] to-[#27517f] text-white p-5 shadow-lg">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
+              <Image
+                src="/cimag-logo.png"
+                alt="Cimag"
+                width={38}
+                height={38}
+                className="h-9 w-9 object-contain"
+              />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Pastas Cimag</h1>
+              <p className="text-white/80 text-sm">Estrutura por município, com especificações e contratos vinculados automaticamente.</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="rounded-xl bg-white/10 px-3 py-2 border border-white/20">
+              <p className="text-white/70">Pastas na tela</p>
+              <p className="text-lg font-semibold">{folders.length}</p>
+            </div>
+            <div className="rounded-xl bg-white/10 px-3 py-2 border border-white/20">
+              <p className="text-white/70">Pastas por município</p>
+              <p className="text-lg font-semibold">{municipalityFolders}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pastas</h1>
-          <p className="text-gray-500">Organize seus documentos em pastas</p>
+          <h2 className="text-xl font-bold text-gray-900">Modelo de Organização</h2>
+          <p className="text-gray-500">Use uma pasta por município e detalhe as especificações para cada fluxo.</p>
         </div>
         <div className="flex items-center gap-3">
           {currentFolderId && !isGestor && (
@@ -258,13 +291,13 @@ export default function PastasClient() {
                     key={folder.id}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg transition-all group cursor-pointer"
+                    className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg hover:-translate-y-0.5 transition-all group cursor-pointer"
                     onClick={() => navigateToFolder(folder.id, folder.name)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                          <FolderOpen className="w-5 h-5 text-amber-600" />
+                        <div className="w-10 h-10 bg-gradient-to-br from-[#1E3A5F]/10 to-emerald-100 rounded-xl flex items-center justify-center">
+                          <FolderOpen className="w-5 h-5 text-[#1E3A5F]" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
@@ -279,6 +312,11 @@ export default function PastasClient() {
                           <p className="text-xs text-gray-500">
                             {folder._count.children} pastas • {folder._count.documents} docs
                           </p>
+                          {folder.description && (
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                              <span className="font-medium text-gray-700">Especificações:</span> {folder.description}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div
@@ -396,7 +434,9 @@ export default function PastasClient() {
                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                         rows={3}
                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        placeholder="Ex.: Contratos de fornecimento 2026, com checklist e minutas oficiais"
                       />
+                      <p className="text-xs text-gray-500 mt-1">Use este campo para registrar as especificações da pasta.</p>
                     </div>
                     <div>
                       <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">

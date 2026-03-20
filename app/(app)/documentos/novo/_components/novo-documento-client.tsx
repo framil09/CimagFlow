@@ -25,7 +25,7 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 export default function NovoDocumentoClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const folderId = searchParams.get("folderId");
+  const folderId = searchParams?.get("folderId") ?? null;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
