@@ -209,8 +209,21 @@ export default function TemplatesClient() {
   };
 
   const addVar = () => {
-    const v = newVar.trim().replace(/\s+/g, "_").toLowerCase();
-    if (v && !form.variables.includes(v)) setForm((f) => ({ ...f, variables: [...f.variables, v] }));
+    const selectedText = savedCreateRange.current?.toString().trim() || "";
+    const sourceName = newVar.trim() || selectedText;
+    const v = sourceName.replace(/\s+/g, "_").toLowerCase();
+
+    if (!v) return;
+
+    const hasSelectedRange = !!savedCreateRange.current && !savedCreateRange.current.collapsed;
+
+    if (hasSelectedRange && createEditorRef.current) {
+      // When user highlights content and creates a variable, replace the selection with {variavel}.
+      insertVar(v);
+    } else if (!form.variables.includes(v)) {
+      setForm((f) => ({ ...f, variables: [...f.variables, v] }));
+    }
+
     setNewVar("");
   };
 
