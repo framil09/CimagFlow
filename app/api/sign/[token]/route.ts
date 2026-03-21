@@ -13,6 +13,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
         document: {
           include: {
             creator: { select: { name: true, email: true } },
+            template: { select: { headerImage: true, footerImage: true } },
             signers: {
               include: { signer: true },
               orderBy: { order: "asc" },
@@ -62,6 +63,8 @@ export async function GET(req: Request, { params }: { params: { token: string } 
           message: ds.document.message,
           deadline: ds.document.deadline,
           creatorName: ds.document.creator.name,
+          headerImage: ds.document.template?.headerImage || null,
+          footerImage: ds.document.template?.footerImage || null,
         },
         signer: {
           name: ds.signer.name,

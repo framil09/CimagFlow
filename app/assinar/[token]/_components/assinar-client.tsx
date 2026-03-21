@@ -268,11 +268,25 @@ export default function AssinarClient({ token }: { token: string }) {
             <>
               <button onClick={() => setShowContent(!showContent)}
                 className="w-full flex items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-700 py-2.5 rounded-xl text-sm font-medium transition-colors mb-4">
-                <FileText className="w-4 h-4" /> {showContent ? "Ocultar" : "Ver"} Conteúdo do Documento
+                <FileText className="w-4 h-4" /> {showContent ? "Ocultar" : "Ver"} Contrato
               </button>
               {showContent && (
-                <div className="bg-gray-50 rounded-xl p-4 mb-4 max-h-96 overflow-y-auto">
-                  <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">{doc.content}</pre>
+                <div className="bg-white rounded-xl border border-gray-200 mb-4 overflow-hidden">
+                  <div className="bg-gray-100 overflow-y-auto" style={{ maxHeight: "70vh" }}>
+                    <div className="mx-auto bg-white shadow-sm" style={{ maxWidth: "210mm" }}>
+                      {doc.headerImage && (
+                        <img src={doc.headerImage} alt="Cabeçalho" className="w-full h-auto" />
+                      )}
+                      <div
+                        className="px-10 py-8 text-gray-800 text-[14px] leading-relaxed"
+                        style={{ fontFamily: "'Times New Roman', 'Georgia', serif" }}
+                        dangerouslySetInnerHTML={{ __html: doc.content }}
+                      />
+                      {doc.footerImage && (
+                        <img src={doc.footerImage} alt="Rodapé" className="w-full h-auto mt-auto" />
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </>
