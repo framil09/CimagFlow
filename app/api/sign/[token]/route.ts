@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { sendEmail, buildCompletedEmail, buildSignatureEmail } from "@/lib/email";
 import { createAuditLog } from "@/lib/audit";
+import { getFileUrl } from "@/lib/s3";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,19 @@ export async function GET(req: Request, { params }: { params: RouteParams }) {
       }
     }
 
+    // Gerar presigned URLs para arquivos S3
+    async function resolveUrl(path: string | null | undefined): Promise<string | null> {
+      if (!path) return null;
+      if (path.startsWith("/") || path.startsWith("http://") || path.startsWith("https://")) return path;
+      try { return await getFileUrl(path); } catch { return null; }
+    }
+
+    const [resolvedFileUrl, resolvedHeader, resolvedFooter] = await Promise.all([
+      resolveUrl(ds.document.fileUrl),
+      resolveUrl(ds.document.template?.headerImage),
+      resolveUrl(ds.document.template?.footerImage),
+    ]);
+
     return NextResponse.json({
       documentSigner: {
         id: ds.id,
@@ -63,12 +77,12 @@ export async function GET(req: Request, { params }: { params: RouteParams }) {
           title: ds.document.title,
           description: ds.document.description,
           content: ds.document.content,
-          fileUrl: ds.document.fileUrl,
+          fileUrl: resolvedFileUrl,
           message: ds.document.message,
           deadline: ds.document.deadline,
           creatorName: ds.document.creator.name,
-          headerImage: ds.document.template?.headerImage || null,
-          footerImage: ds.document.template?.footerImage || null,
+          headerImage: resolvedHeader,
+          footerImage: resolvedFooter,
         },
         signer: {
           name: ds.signer.name,
