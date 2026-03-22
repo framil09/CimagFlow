@@ -73,7 +73,7 @@ export async function sendActionNotification({
   `;
 
   return resend.emails.send({
-    from: onboarding@resend.dev,
+    from: "onboarding@resend.dev",
     to,
     subject: `[CimagFlow] ${action}`,
     html,

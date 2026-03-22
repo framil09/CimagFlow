@@ -428,7 +428,7 @@ export default function DashboardClient({ userName, userRole }: { userName: stri
   })).filter((d) => d.value > 0);
 
   const areaData = data.documents.byMonth.map((d, i) => ({
-    month: MONTH_NAMES[new Date(d.month).getMonth()],
+    month: MONTH_NAMES[new Date(d.month).getUTCMonth()],
     documentos: d.count,
     demandas: data.demands.byMonth[i]?.count ?? 0,
   }));
