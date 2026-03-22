@@ -5,10 +5,14 @@ import { createAuditLog } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request, { params }: { params: { token: string } }) {
+type RouteParams = { token: string } | Promise<{ token: string }>;
+
+export async function GET(req: Request, { params }: { params: RouteParams }) {
   try {
+    const resolvedParams = await Promise.resolve(params);
+    const token = resolvedParams.token;
     const ds = await prisma.documentSigner.findUnique({
-      where: { token: params.token },
+      where: { token },
       include: {
         document: {
           include: {
@@ -87,13 +91,15 @@ export async function GET(req: Request, { params }: { params: { token: string } 
   }
 }
 
-export async function POST(req: Request, { params }: { params: { token: string } }) {
+export async function POST(req: Request, { params }: { params: RouteParams }) {
   try {
+    const resolvedParams = await Promise.resolve(params);
+    const token = resolvedParams.token;
     const body = await req.json();
     const { action, cpf, signatureImage } = body;
 
     const ds = await prisma.documentSigner.findUnique({
-      where: { token: params.token },
+      where: { token },
       include: {
         document: {
           include: {
@@ -167,7 +173,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
     if (action === "sign" && signatureImage) updateData.signatureImage = signatureImage;
 
     await prisma.documentSigner.update({
-      where: { token: params.token },
+      where: { token },
       data: updateData,
     });
 

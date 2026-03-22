@@ -1,5 +1,6 @@
 import AssinarClient from "./_components/assinar-client";
 export const dynamic = "force-dynamic";
-export default function AssinarPage({ params }: { params: { token: string } }) {
-  return <AssinarClient token={params.token} />;
+export default async function AssinarPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  return <AssinarClient token={token} />;
 }
