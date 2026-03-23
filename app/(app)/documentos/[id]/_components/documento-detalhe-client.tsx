@@ -275,7 +275,7 @@ export default function DocumentoDetalheClient({ id }: { id: string }) {
                   {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Enviar para Assinatura
                 </button>
               )}
-              {doc.status === "EM_ANDAMENTO" && (
+              {doc.status === "EM_ANDAMENTO" && signedCount === 0 && (
                 <button onClick={handleCancel}
                   className="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 py-2.5 rounded-xl font-medium text-sm transition-colors">
                   <XCircle className="w-4 h-4" /> Cancelar

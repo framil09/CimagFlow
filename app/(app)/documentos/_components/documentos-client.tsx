@@ -83,6 +83,105 @@ export default function DocumentosClient() {
     fetchDocs();
   };
 
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  const handleDownload = async (docSummary: any) => {
+    setDownloading(docSummary.id);
+    try {
+      // Buscar dados completos do documento (incluindo assinaturas e template)
+      const fullRes = await fetch(`/api/documents/${docSummary.id}`);
+      const fullData = await fullRes.json();
+      const fullDoc = fullData.document;
+      if (!fullDoc) { alert("Erro ao buscar documento."); return; }
+
+      // Se tem conteúdo HTML → gerar PDF com assinaturas
+      if (fullDoc.content) {
+        const html2pdf = (await import("html2pdf.js")).default;
+
+        const headerImg = fullDoc.template?.headerImage;
+        const footerImg = fullDoc.template?.footerImage;
+        const signersHtml = fullDoc.signers?.length
+          ? `<div style="margin-top:32px;padding-top:24px;border-top:1px solid #e5e7eb;">
+              <h3 style="font-size:15px;margin-bottom:16px;">Assinaturas</h3>
+              <div style="display:flex;flex-wrap:wrap;gap:24px;">
+                ${fullDoc.signers.map((s: any) => `
+                  <div style="text-align:center;flex:1;min-width:200px;">
+                    ${s.signatureImage ? `<img src="${s.signatureImage}" style="height:60px;margin:0 auto 4px;display:block;" />` : ""}
+                    <div style="font-weight:bold;font-size:13px;border-top:1px solid #9ca3af;padding-top:4px;">${s.signer?.name || ""}</div>
+                    <div style="font-size:11px;color:#6b7280;">${s.signedAt ? new Date(s.signedAt).toLocaleDateString("pt-BR") : ""}</div>
+                  </div>
+                `).join("")}
+              </div>
+            </div>`
+          : "";
+
+        // Container visível mas fora da tela (html2canvas precisa renderizar elementos visíveis)
+        const wrapper = document.createElement("div");
+        wrapper.style.cssText = "position:absolute;left:0;top:0;width:210mm;z-index:-9999;opacity:0;overflow:hidden;pointer-events:none;";
+        const container = document.createElement("div");
+        container.style.cssText = "width:210mm;background:#fff;font-family:'Times New Roman',Georgia,serif;color:#1f2937;";
+        container.innerHTML = `
+          ${headerImg ? `<img src="${headerImg}" style="width:100%;height:auto;display:block;" />` : ""}
+          <div style="padding:30px 40px;font-size:14px;line-height:1.6;">${fullDoc.content}</div>
+          <div style="padding:0 40px 30px;">${signersHtml}</div>
+          ${footerImg ? `<img src="${footerImg}" style="width:100%;height:auto;display:block;" />` : ""}
+        `;
+        wrapper.appendChild(container);
+        document.body.appendChild(wrapper);
+
+        // Aguardar todas as imagens carregarem antes de gerar o PDF
+        const imgs = container.querySelectorAll("img");
+        if (imgs.length > 0) {
+          await Promise.all(Array.from(imgs).map(img =>
+            img.complete ? Promise.resolve() : new Promise<void>((resolve) => {
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
+            })
+          ));
+        }
+
+        const filename = `${fullDoc.title.replace(/[^a-zA-Z0-9À-ú ]/g, "")}.pdf`;
+
+        await html2pdf().set({
+          margin: [0, 0, 0, 0],
+          filename,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0, windowWidth: container.scrollWidth },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+        }).from(container).save();
+
+        document.body.removeChild(wrapper);
+        return;
+      }
+
+      // Se tem arquivo PDF → baixar via S3
+      if (fullDoc.fileUrl) {
+        const res = await fetch("/api/upload/file-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ cloud_storage_path: fullDoc.fileUrl, download: true }),
+        });
+        const data = await res.json();
+        if (data.url) {
+          const a = document.createElement("a");
+          a.href = data.url;
+          a.download = fullDoc.fileName || fullDoc.title || "documento";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          return;
+        }
+      }
+
+      alert("Este documento não possui conteúdo para download.");
+    } catch {
+      alert("Erro ao baixar documento.");
+    } finally {
+      setDownloading(null);
+    }
+  };
+
   const tabs: { value: DocStatus; label: string }[] = [
     { value: "TODOS", label: "Todos" },
     { value: "EM_ANDAMENTO", label: "Em Andamento" },
@@ -215,14 +314,16 @@ export default function DocumentosClient() {
                             </button>
                           )}
                           {doc.status === "CONCLUIDO" && (
-                            <Link href={`/documentos/${doc.id}`}
-                              className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                              title="Ver contrato assinado"
+                            <button
+                              onClick={() => handleDownload(doc)}
+                              disabled={downloading === doc.id}
+                              className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50"
+                              title="Baixar documento assinado"
                             >
                               <Download className="w-4 h-4" />
-                            </Link>
+                            </button>
                           )}
-                          {doc.status === "EM_ANDAMENTO" && (
+                          {doc.status === "EM_ANDAMENTO" && !doc.signers?.some((s: any) => s.status === "ASSINADO") && (
                             <button
                               onClick={() => handleCancel(doc.id)}
                               className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"

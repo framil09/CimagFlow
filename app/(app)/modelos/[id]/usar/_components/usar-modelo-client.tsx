@@ -67,6 +67,33 @@ const VAR_CATEGORIES = {
 
 export default function UsarModeloClient({ templateId }: UsarModeloClientProps) {
   const router = useRouter();
+
+  // Máscaras para CPF e Telefone
+  const maskCPF = (v: string) => {
+    const d = v.replace(/\D/g, "").slice(0, 11);
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return `${d.slice(0, 3)}.${d.slice(3)}`;
+    if (d.length <= 9) return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`;
+    return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
+  };
+
+  const maskPhone = (v: string) => {
+    const d = v.replace(/\D/g, "").slice(0, 11);
+    if (d.length <= 2) return d.length ? `(${d}` : "";
+    if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+    if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  };
+
+  const CPF_VARS = ["cpf", "cpf_contratante", "cpf_contratada", "cpf_prefeito", "cpf_representante", "cpf_responsavel"];
+  const PHONE_VARS = ["telefone", "telefone_prefeitura", "telefone_empresa", "telefone_contratante", "telefone_contratada", "p_telefone", "m_telefone", "phone", "celular", "fone"];
+
+  const getMask = (varName: string): ((v: string) => string) | null => {
+    const lower = varName.toLowerCase();
+    if (CPF_VARS.includes(lower) || lower.includes("cpf")) return maskCPF;
+    if (PHONE_VARS.includes(lower) || lower.includes("telefone") || lower.includes("celular") || lower.includes("fone")) return maskPhone;
+    return null;
+  };
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -710,6 +737,7 @@ export default function UsarModeloClient({ templateId }: UsarModeloClientProps) 
               <div className="grid grid-cols-1 gap-2.5 max-h-[300px] overflow-y-auto pr-1">
                 {templateVars.map(varName => {
                   const isFilled = !!variables[varName];
+                  const mask = getMask(varName);
                   return (
                     <div key={varName} className={`relative ${isFilled ? 'ring-1 ring-emerald-200' : ''} rounded-lg`}>
                       <label className="text-[10px] text-gray-400 mb-0.5 flex items-center gap-1">
@@ -717,11 +745,15 @@ export default function UsarModeloClient({ templateId }: UsarModeloClientProps) 
                         <code className="bg-gray-50 px-1 rounded text-[10px]">{`{${varName}}`}</code>
                       </label>
                       <input type="text" value={variables[varName] || ""}
-                        onChange={e => setVariables(prev => ({ ...prev, [varName]: e.target.value }))}
+                        inputMode={mask ? "numeric" : undefined}
+                        onChange={e => {
+                          const val = mask ? mask(e.target.value) : e.target.value;
+                          setVariables(prev => ({ ...prev, [varName]: val }));
+                        }}
                         className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#1E3A5F] focus:border-transparent transition-all ${
                           isFilled ? 'border-emerald-200 bg-emerald-50/30' : 'border-gray-200'
                         }`}
-                        placeholder={varName.replace(/_/g, " ")} />
+                        placeholder={mask === maskCPF ? "000.000.000-00" : mask === maskPhone ? "(00) 00000-0000" : varName.replace(/_/g, " ")} />
                     </div>
                   );
                 })}
