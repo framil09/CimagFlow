@@ -637,11 +637,11 @@ export default function EmpresasClient() {
                               <input
                                 type="number"
                                 min="0"
-                                step="0.01"
+                                step="1"
                                 value={item.quantity}
                                 onChange={(e) => {
                                   const updated = [...formItems];
-                                  const qty = parseFloat(e.target.value) || 0;
+                                  const qty = parseInt(e.target.value, 10) || 0;
                                   const newTotal = Math.round(qty * updated[idx].unitPrice * 100) / 100;
                                   updated[idx] = { ...updated[idx], quantity: qty, totalPrice: newTotal };
                                   setFormItems(updated);
@@ -699,14 +699,9 @@ export default function EmpresasClient() {
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">R$</span>
                                 <input
                                   type="text"
-                                  inputMode="decimal"
-                                  value={formatBRL(item.totalPrice)}
-                                  onChange={(e) => {
-                                    const updated = [...formItems];
-                                    updated[idx] = { ...updated[idx], totalPrice: parseBRL(e.target.value) };
-                                    setFormItems(updated);
-                                  }}
-                                  className="w-full pl-9 pr-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                  readOnly
+                                  value={formatBRL(item.quantity * item.unitPrice)}
+                                  className="w-full pl-9 pr-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-gray-100 text-gray-600 cursor-default"
                                 />
                               </div>
                             </div>
